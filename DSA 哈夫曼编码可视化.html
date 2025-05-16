@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>哈夫曼编码可视化工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        accent: '#F59E0B',
+                        danger: '#EF4444',
+                        dark: '#1F2937',
+                        light: '#F9FAFB'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .node {
+                @apply rounded-full flex items-center justify-center font-bold transition-all duration-300 cursor-pointer;
+            }
+            .node-leaf {
+                @apply bg-primary text-white border-2 border-primary/70 w-16 h-16;
+            }
+            .node-internal {
+                @apply bg-secondary text-white border-2 border-secondary/70 w-12 h-12;
+            }
+            .option-card {
+                @apply p-4 rounded-lg border-2 border-gray-200 hover:border-primary hover:bg-blue-50 transition-all duration-200 cursor-pointer flex items-center;
+            }
+            .option-card-selected {
+                @apply border-primary bg-blue-50 shadow-md transform scale-[1.02];
+            }
+            .edge {
+                @apply absolute border-t-2 border-gray-300 transform -translate-y-1/2 transition-all duration-300;
+            }
+            .tree-edge {
+                @apply absolute bg-gray-300 rounded-full transition-all duration-300;
+            }
+            .tree-edge-left {
+                @apply bg-blue-300;
+            }
+            .tree-edge-right {
+                @apply bg-red-300;
+            }
+            .highlight {
+                @apply scale-110 shadow-lg;
+            }
+            .animation-pulse {
+                animation: pulse 1.5s infinite;
+            }
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.5; }
+            }
+            .tree-container {
+                @apply relative overflow-x-auto py-8 px-4;
+            }
+            .tree-level {
+                @apply flex justify-center items-center mb-10 relative;
+            }
+            .step-btn {
+                @apply px-4 py-2 rounded-lg font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+            }
+            .table-cell {
+                @apply px-4 py-2 border-b border-gray-200;
+            }
+            .code-bit {
+                @apply inline-block w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold;
+            }
+            .code-0 {
+                @apply bg-blue-100 text-blue-800;
+            }
+            .code-1 {
+                @apply bg-red-100 text-red-800;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-light to-blue-50 min-h-screen font-sans">
+    <!-- 头部导航 -->
+    <header class="bg-white shadow-md sticky top-0 z-50 transition-all duration-300">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa fa-tree text-primary text-3xl"></i>
+                <h1 class="text-2xl font-bold text-dark">哈夫曼编码<span class="text-primary">可视化</span></h1>
+            </div>
+            <nav class="hidden md:flex space-x-8">
+                <a href="#problem"
+                    class="text-dark hover:text-primary transition-colors duration-200 font-medium">题目</a>
+                <a href="#visualizer"
+                    class="text-dark hover:text-primary transition-colors duration-200 font-medium">可视化</a>
+                <a href="#explanation"
+                    class="text-dark hover:text-primary transition-colors duration-200 font-medium">解释</a>
+                <a href="#practice"
+                    class="text-dark hover:text-primary transition-colors duration-200 font-medium">练习</a>
+            </nav>
+            <button class="md:hidden text-dark text-2xl" id="menuBtn">
+                <i class="fa fa-bars"></i>
+            </button>
+        </div>
+        <div class="md:hidden hidden bg-white w-full" id="mobileMenu">
+            <div class="container mx-auto px-4 py-2 flex flex-col space-y-3">
+                <a href="#problem"
+                    class="text-dark hover:text-primary transition-colors duration-200 py-2 border-b border-gray-100">题目</a>
+                <a href="#visualizer"
+                    class="text-dark hover:text-primary transition-colors duration-200 py-2 border-b border-gray-100">可视化</a>
+                <a href="#explanation"
+                    class="text-dark hover:text-primary transition-colors duration-200 py-2 border-b border-gray-100">解释</a>
+                <a href="#practice" class="text-dark hover:text-primary transition-colors duration-200 py-2">练习</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- 问题部分 -->
+        <section id="problem" class="mb-16">
+            <div class="bg-white rounded-xl shadow-xl p-6 md:p-10">
+                <h2 class="text-3xl font-bold text-dark mb-6">题目</h2>
+                <div class="mb-6">
+                    <p class="text-lg text-gray-700 mb-4">
+                        5. 设字符集 S 包含 7 个字符，各字符的出现的频次分别为 2, 3, 4, 6, 8, 10, 11，
+                        为 S 中的各字符构造哈夫曼编码，编码长度不小于 3 的字符个数是 ( )。
+                    </p>
+
+                    <div class="space-y-3 mb-6" id="options-container">
+                        <div class="option-card" data-option="A">
+                            <span class="font-bold text-primary mr-2">A.</span>
+                            <span>2</span>
+                        </div>
+                        <div class="option-card" data-option="B">
+                            <span class="font-bold text-primary mr-2">B.</span>
+                            <span>3</span>
+                        </div>
+                        <div class="option-card" data-option="C">
+                            <span class="font-bold text-primary mr-2">C.</span>
+                            <span>4</span>
+                        </div>
+                        <div class="option-card" data-option="D">
+                            <span class="font-bold text-primary mr-2">D.</span>
+                            <span>5</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg mb-6" id="selected-option-display">
+                        <h3 class="font-bold mb-2">当前选择：</h3>
+                        <p class="text-gray-700" id="selected-option-text">请选择一个选项，再查看正确答案可视化</p>
+                    </div>
+
+                    <button id="visualize-option"
+                        class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center w-full md:w-auto">
+                        <i class="fa fa-play-circle mr-2"></i> 可视化哈夫曼编码
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 可视化工具部分 -->
+        <section id="visualizer" class="mb-16 hidden">
+            <div class="bg-white rounded-xl shadow-xl p-6 md:p-10">
+                <h2 class="text-3xl font-bold text-dark mb-8">哈夫曼编码可视化</h2>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2">
+                        <h3 class="text-xl font-bold mb-4">输入频率</h3>
+                        <div class="bg-gray-50 p-4 rounded-lg mb-6 overflow-x-auto" id="input-frequencies-display">
+                            <span id="input-frequencies-content" class="text-lg">请选择一个选项进行可视化</span>
+                        </div>
+
+                        <h3 class="text-xl font-bold mb-4">哈夫曼树构建过程</h3>
+                        <div class="bg-gray-50 rounded-lg p-4 mb-6" id="tree-container">
+                            <div class="flex justify-center items-center h-40 text-gray-500" id="empty-tree-message">
+                                <i class="fa fa-info-circle mr-2"></i>
+                                <span>哈夫曼树将在这里显示</span>
+                            </div>
+                            <div id="tree-visualization" class="tree-container hidden">
+                                <div id="tree-steps" class="space-y-10"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex space-x-4 mb-6">
+                            <button id="prev-step"
+                                class="step-btn bg-gray-300 text-gray-800 hover:bg-gray-400 focus:ring-gray-400"
+                                disabled>
+                                <i class="fa fa-arrow-left mr-2"></i>上一步
+                            </button>
+                            <button id="next-step"
+                                class="step-btn bg-primary text-white hover:bg-primary/90 focus:ring-primary">
+                                下一步<i class="fa fa-arrow-right ml-2"></i>
+                            </button>
+                            <button id="show-all"
+                                class="step-btn bg-accent text-white hover:bg-accent/90 focus:ring-accent">
+                                显示全部<i class="fa fa-eye ml-2"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-xl font-bold mb-4">编码结果</h3>
+                        <div class="bg-gray-50 rounded-lg p-4 mb-6" id="coding-result">
+                            <div class="w-full text-center text-gray-500">
+                                <i class="fa fa-hourglass-half text-3xl mb-2"></i>
+                                <p>等待生成编码...</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-primary/10 rounded-lg p-4 mb-6">
+                            <h4 class="font-bold mb-2 text-primary">哈夫曼编码规则</h4>
+                            <ul class="text-gray-700 space-y-2">
+                                <li>每次选择频率最小的两个节点合并</li>
+                                <li>左子树路径标记为0，右子树路径标记为1</li>
+                                <li>编码长度由从根到叶的路径决定</li>
+                                <li>频率越高的字符编码越短</li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="font-bold mb-2 text-dark">问题解答</h4>
+                            <p class="text-gray-700 mb-2">
+                                编码长度不小于3的字符个数是：
+                            </p>
+                            <p class="text-2xl font-bold text-primary text-center" id="answer-count">?</p>
+                            <p class="text-sm text-gray-500 text-center">
+                                （根据生成的编码表计算得出）
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 解释部分 -->
+        <section id="explanation" class="mb-16">
+            <div class="bg-white rounded-xl shadow-xl p-6 md:p-10">
+                <h2 class="text-3xl font-bold text-dark mb-8">哈夫曼编码原理解释</h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-xl font-bold mb-4 text-primary">哈夫曼树构建步骤</h3>
+                        <p class="text-gray-600 mb-4">
+                            哈夫曼树的构建过程如下：
+                        </p>
+                        <ol class="list-decimal list-inside text-gray-600 space-y-2 mb-6">
+                            <li>将所有字符按频率从小到大排序</li>
+                            <li>每次选择频率最小的两个节点合并成一个新节点</li>
+                            <li>新节点的频率为这两个节点的频率之和</li>
+                            <li>将新节点插入队列，保持队列有序</li>
+                            <li>重复步骤2-4，直到队列中只剩一个节点</li>
+                        </ol>
+
+                        <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                            <h4 class="font-bold mb-2">编码生成规则</h4>
+                            <p class="text-gray-600">
+                                从根节点开始，向左走标记为0，向右走标记为1。
+                                每个字符的编码是从根到该字符节点的路径标记序列。
+                                频率越高的字符离根越近，编码越短。
+                            </p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-xl font-bold mb-4 text-secondary">本题解答步骤</h3>
+                        <p class="text-gray-600 mb-4">
+                            对于频率集合 [2, 3, 4, 6, 8, 10, 11]：
+                        </p>
+                        <ul class="list-disc list-inside text-gray-600 space-y-2 mb-6">
+                            <li>合并2和3，生成5</li>
+                            <li>合并4和5，生成9</li>
+                            <li>合并6和8，生成14</li>
+                            <li>合并9和10，生成19</li>
+                            <li>合并11和14，生成25</li>
+                            <li>合并19和25，生成44</li>
+                        </ul>
+
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-bold mb-2">编码长度分析</h4>
+                            <p class="text-gray-600 mb-2">
+                                最终生成的哈夫曼树中：
+                            </p>
+                            <ul class="list-disc list-inside text-gray-600 space-y-1 mb-2">
+                                <li>频率为2和3的字符编码长度为4</li>
+                                <li>频率为4、6、8的字符编码长度为3</li>
+                                <li>频率为10和11的字符编码长度为2</li>
+                            </ul>
+                            <p class="text-gray-600">
+                                因此，编码长度不小于3的字符有5个，答案选D。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 练习部分 -->
+        <section id="practice" class="mb-16">
+            <div class="bg-white rounded-xl shadow-xl p-6 md:p-10">
+                <h2 class="text-3xl font-bold text-dark mb-8">练习与巩固</h2>
+
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold mb-4">自定义测试</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="custom-frequencies"
+                                class="block text-gray-700 font-bold mb-2">输入频率（用逗号分隔）</label>
+                            <input type="text" id="custom-frequencies"
+                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                                placeholder="例如: 2,3,4,6,8,10,11">
+                        </div>
+                        <div>
+                            <label for="custom-chars" class="block text-gray-700 font-bold mb-2">输入字符（可选，用逗号分隔）</label>
+                            <input type="text" id="custom-chars"
+                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                                placeholder="例如: A,B,C,D,E,F,G">
+                        </div>
+                    </div>
+                    <button id="test-custom-input"
+                        class="mt-4 bg-accent hover:bg-accent/90 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-[1.02]">
+                        <i class="fa fa-check-circle mr-2"></i> 生成哈夫曼编码
+                    </button>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-6" id="custom-result-container">
+                    <h3 class="text-xl font-bold mb-4">测试结果</h3>
+                    <div class="bg-gray-50 rounded-lg p-4 mb-6" id="custom-tree-container">
+                        <div class="flex justify-center items-center h-40 text-gray-500" id="custom-empty-message">
+                            <i class="fa fa-info-circle mr-2"></i>
+                            <span>自定义哈夫曼树将在这里显示</span>
+                        </div>
+                        <div id="custom-tree-visualization" class="tree-container hidden">
+                            <div id="custom-tree-steps" class="space-y-10"></div>
+                        </div>
+                        <div class="flex space-x-4 mb-6">
+                            <button id="custom-prev-step"
+                                class="step-btn bg-gray-300 text-gray-800 hover:bg-gray-400 focus:ring-gray-400"
+                                disabled>
+                                <i class="fa fa-arrow-left mr-2"></i>上一步
+                            </button>
+                            <button id="custom-next-step"
+                                class="step-btn bg-primary text-white hover:bg-primary/90 focus:ring-primary">
+                                下一步<i class="fa fa-arrow-right ml-2"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="custom-result-message" class="mb-4">
+                        <!-- 结果将动态显示 -->
+                    </div>
+                    <div id="custom-tree-visualization" class="tree-container mb-4">
+                        <!-- 哈夫曼树可视化将动态显示 -->
+                    </div>
+                    <div id="custom-coding-result" class="bg-white rounded-lg p-4 mb-4">
+                        <!-- 编码结果将动态显示 -->
+                    </div>
+                    <div id="custom-answer" class="bg-primary/10 rounded-lg p-4">
+                        <!-- 答案将动态显示 -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-dark text-white py-10">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">哈夫曼编码可视化工具</h3>
+                    <p class="text-gray-400">
+                        帮助理解哈夫曼编码原理的交互式学习工具。
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold mb-4">快速链接</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#problem" class="text-gray-400 hover:text-white transition-colors">题目</a></li>
+                        <li><a href="#visualizer" class="text-gray-400 hover:text-white transition-colors">可视化</a></li>
+                        <li><a href="#explanation" class="text-gray-400 hover:text-white transition-colors">解释</a></li>
+                        <li><a href="#practice" class="text-gray-400 hover:text-white transition-colors">练习</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold mb-4">关注我们</h3>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors text-xl">
+                            <i class="fa fa-github"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors text-xl">
+                            <i class="fa fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors text-xl">
+                            <i class="fa fa-linkedin"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2025 哈夫曼编码可视化工具 | 版权所有</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 移动菜单切换
+        document.getElementById('menuBtn').addEventListener('click', function () {
+            const mobileMenu = document.getElementById('mobileMenu');
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // 选项选择功能
+        const options = document.querySelectorAll('.option-card');
+        let selectedOption = null;
+
+        options.forEach(option => {
+            option.addEventListener('click', function () {
+                // 移除其他选项的选中状态
+                options.forEach(opt => opt.classList.remove('option-card-selected'));
+                // 添加当前选项的选中状态
+                this.classList.add('option-card-selected');
+
+                // 获取选项信息
+                const optionLetter = this.getAttribute('data-option');
+                const optionText = this.querySelector('span:last-child').textContent;
+
+                // 更新选择显示
+                document.getElementById('selected-option-text').innerHTML =
+                    `<span class="font-bold text-primary">${optionLetter}.</span> ${optionText}`;
+
+                // 保存选中的选项
+                selectedOption = optionLetter;
+            });
+        });
+
+        // 哈夫曼编码可视化数据
+        const huffmanData = {
+            currentFrequencies: [],
+            currentChars: [],
+            steps: [],
+            currentStep: 0,
+            huffmanTree: null,
+            codes: {}
+        };
+
+        // 可视化选项
+        document.getElementById('visualize-option').addEventListener('click', function () {
+            if (!selectedOption) {
+                alert('请先选择一个选项');
+                return;
+            }
+
+            // 重置状态
+            huffmanData.currentStep = 0;
+            huffmanData.steps = [];
+
+            // 设置当前频率
+            huffmanData.currentFrequencies = [2, 3, 4, 6, 8, 10, 11];
+            huffmanData.currentChars = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+
+            // 更新可视化界面
+            document.getElementById('input-frequencies-content').textContent =
+                `频率: [${huffmanData.currentFrequencies.join(', ')}]`;
+
+            // 构建哈夫曼树并保存每一步
+            buildHuffmanTree(huffmanData.currentFrequencies, huffmanData.currentChars);
+
+            // 显示树可视化
+            visualizeHuffmanSteps();
+
+            // 显示可视化部分
+            document.getElementById('visualizer').classList.remove('hidden');
+
+            // 平滑滚动到可视化部分
+            document.getElementById('visualizer').scrollIntoView({ behavior: 'smooth' });
+
+            // 初始化步骤按钮状态
+            updateStepButtons();
+        });
+
+        // 构建哈夫曼树并保存每一步
+        function buildHuffmanTree(frequencies, chars) {
+            // 创建初始节点数组
+            let nodes = frequencies.map((freq, index) => ({
+                freq,
+                char: chars[index],
+                left: null,
+                right: null,
+                isLeaf: true
+            }));
+
+            // 保存初始状态
+            huffmanData.steps.push([...nodes]);
+
+            // 构建哈夫曼树
+            while (nodes.length > 1) {
+                // 按频率排序
+                nodes.sort((a, b) => a.freq - b.freq);
+
+                // 取出最小的两个节点
+                const left = nodes.shift();
+                const right = nodes.shift();
+
+                // 创建新节点
+                const newNode = {
+                    freq: left.freq + right.freq,
+                    char: null,
+                    left,
+                    right,
+                    isLeaf: false
+                };
+
+                // 将新节点插入数组
+                nodes.push(newNode);
+
+                // 保存当前步骤
+                huffmanData.steps.push([...nodes]);
+            }
+
+            // 保存最终的哈夫曼树
+            huffmanData.huffmanTree = nodes[0];
+
+            // 生成编码
+            generateCodes(huffmanData.huffmanTree, '');
+
+            // 计算答案
+            const answerCount = Object.values(huffmanData.codes).filter(code => code.length >= 3).length;
+            document.getElementById('answer-count').textContent = answerCount;
+        }
+
+        // 生成哈夫曼编码
+        function generateCodes(node, prefix) {
+            if (node.isLeaf) {
+                huffmanData.codes[node.char] = prefix;
+                return;
+            }
+
+            generateCodes(node.left, prefix + '0');
+            generateCodes(node.right, prefix + '1');
+        }
+
+        // 可视化哈夫曼树构建步骤
+        function visualizeHuffmanSteps() {
+            const treeStepsContainer = document.getElementById('tree-steps');
+            treeStepsContainer.innerHTML = '';
+
+            // 显示当前步骤的树
+            visualizeHuffmanStep(huffmanData.currentStep);
+
+            // 显示编码结果
+            updateCodingResult();
+        }
+
+        // 可视化特定步骤的哈夫曼树
+        function visualizeHuffmanStep(stepIndex) {
+            const treeStepsContainer = document.getElementById('tree-steps');
+            treeStepsContainer.innerHTML = '';
+
+            const stepNodes = huffmanData.steps[stepIndex];
+
+            if (!stepNodes || stepNodes.length === 0) {
+                return;
+            }
+
+            // 创建步骤标题
+            const stepTitle = document.createElement('h4');
+            stepTitle.className = 'text-xl font-bold mb-4';
+            stepTitle.textContent = `步骤 ${stepIndex + 1}: `;
+
+            if (stepIndex === 0) {
+                stepTitle.textContent += '初始节点';
+            } else if (stepIndex === huffmanData.steps.length - 1) {
+                stepTitle.textContent += '最终哈夫曼树';
+            } else {
+                const mergedNodes = huffmanData.steps[stepIndex - 1]
+                    .filter(n => !huffmanData.steps[stepIndex].includes(n));
+                stepTitle.textContent += `合并 ${mergedNodes[0].char || mergedNodes[0].freq} 和 ${mergedNodes[1].char || mergedNodes[1].freq} 为 ${mergedNodes[0].freq + mergedNodes[1].freq}`;
+            }
+
+            treeStepsContainer.appendChild(stepTitle);
+
+            // 创建树容器
+            const treeContainer = document.createElement('div');
+            treeContainer.className = 'bg-gray-50 rounded-lg p-6 relative';
+            treeContainer.style.minHeight = '300px';
+
+            // 显示树可视化容器
+            document.getElementById('tree-visualization').classList.remove('hidden');
+            document.getElementById('empty-tree-message').classList.add('hidden');
+
+            if (stepIndex === huffmanData.steps.length - 1 && stepNodes.length === 1) {
+                // 最终树的可视化 - 使用递归方式绘制完整树
+                visualizeTreeNode(stepNodes[0], treeContainer, 50, 30, 180, 0);
+            } else {
+                // 创建节点容器
+                const nodesContainer = document.createElement('div');
+                nodesContainer.className = 'flex flex-wrap justify-center gap-6 items-center';
+
+                // 添加节点并添加动画效果
+                stepNodes.forEach((node, idx) => {
+                    const nodeEl = document.createElement('div');
+                    nodeEl.className = `node ${node.isLeaf ? 'node-leaf' : 'node-internal'} flex flex-col items-center`;
+                    nodeEl.style.animation = `fadeIn 0.5s ease ${idx * 0.1}s forwards`;
+
+                    if (node.isLeaf) {
+                        nodeEl.innerHTML = `
+                            <div class="text-xs mb-1 font-bold">${node.char}</div>
+                            <div>${node.freq}</div>
+                        `;
+                    } else {
+                        nodeEl.innerHTML = `<div>${node.freq}</div>`;
+                    }
+
+                    // 添加悬停效果
+                    nodeEl.addEventListener('mouseover', function () {
+                        this.classList.add('highlight');
+                    });
+                    nodeEl.addEventListener('mouseout', function () {
+                        this.classList.remove('highlight');
+                    });
+
+                    nodesContainer.appendChild(nodeEl);
+                });
+
+                treeContainer.appendChild(nodesContainer);
+            }
+
+            treeStepsContainer.appendChild(treeContainer);
+        }
+
+        // 递归可视化树节点
+        function visualizeTreeNode(node, container, x, y, width, depth) {
+            if (!node) return;
+
+            // 创建节点元素
+            const nodeEl = document.createElement('div');
+            nodeEl.className = `node ${node.isLeaf ? 'node-leaf' : 'node-internal'} absolute`;
+            nodeEl.style.left = `${x}%`;
+            nodeEl.style.top = `${y}px`;
+            nodeEl.style.transform = 'translate(-50%, -50%)';
+            nodeEl.style.zIndex = '10';
+            nodeEl.style.animation = `fadeIn 0.5s ease ${depth * 0.2}s forwards`;
+            nodeEl.style.opacity = '0';
+
+            if (node.isLeaf) {
+                nodeEl.innerHTML = `
+                    <div class="text-xs mb-1 font-bold">${node.char}</div>
+                    <div>${node.freq}</div>
+                `;
+            } else {
+                nodeEl.innerHTML = `<div>${node.freq}</div>`;
+            }
+
+            // 添加悬停效果
+            nodeEl.addEventListener('mouseover', function () {
+                this.classList.add('highlight');
+            });
+            nodeEl.addEventListener('mouseout', function () {
+                this.classList.remove('highlight');
+            });
+
+            container.appendChild(nodeEl);
+
+            // 如果有子节点，递归绘制
+            if (node.left) {
+                // 计算左子节点位置
+                const leftX = x - width / 2;
+                const leftY = y + 80;
+
+                // 绘制连接线
+                const edgeLeft = document.createElement('div');
+                edgeLeft.className = 'tree-edge tree-edge-left';
+                edgeLeft.style.left = `${x}%`;
+                edgeLeft.style.top = `${y}px`;
+                edgeLeft.style.width = `${width / 2}%`;
+                edgeLeft.style.height = '2px';
+                edgeLeft.style.transform = 'translateY(0) rotate(-30deg)';
+                edgeLeft.style.transformOrigin = 'left center';
+                edgeLeft.style.animation = `fadeIn 0.5s ease ${depth * 0.2 + 0.1}s forwards`;
+                edgeLeft.style.opacity = '0';
+                edgeLeft.style.zIndex = '5';
+
+                // 添加编码标签 (0)
+                const labelLeft = document.createElement('div');
+                labelLeft.className = 'absolute bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold';
+                labelLeft.textContent = '0';
+                labelLeft.style.left = `${x - width / 4}%`;
+                labelLeft.style.top = `${y + 30}px`;
+                labelLeft.style.transform = 'translate(-50%, -50%)';
+                labelLeft.style.zIndex = '6';
+                labelLeft.style.animation = `fadeIn 0.5s ease ${depth * 0.2 + 0.2}s forwards`;
+                labelLeft.style.opacity = '0';
+
+                container.appendChild(edgeLeft);
+                container.appendChild(labelLeft);
+
+                // 递归绘制左子树
+                visualizeTreeNode(node.left, container, leftX, leftY, width / 2, depth + 1);
+            }
+
+            if (node.right) {
+                // 计算右子节点位置
+                const rightX = x + width / 2;
+                const rightY = y + 80;
+
+                // 绘制连接线
+                const edgeRight = document.createElement('div');
+                edgeRight.className = 'tree-edge tree-edge-right';
+                edgeRight.style.left = `${x}%`;
+                edgeRight.style.top = `${y}px`;
+                edgeRight.style.width = `${width / 2}%`;
+                edgeRight.style.height = '2px';
+                edgeRight.style.transform = 'translateY(0) rotate(30deg)';
+                edgeRight.style.transformOrigin = 'left center';
+                edgeRight.style.animation = `fadeIn 0.5s ease ${depth * 0.2 + 0.1}s forwards`;
+                edgeRight.style.opacity = '0';
+                edgeRight.style.zIndex = '5';
+
+                // 添加编码标签 (1)
+                const labelRight = document.createElement('div');
+                labelRight.className = 'absolute bg-red-100 text-red-800 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold';
+                labelRight.textContent = '1';
+                labelRight.style.left = `${x + width / 4}%`;
+                labelRight.style.top = `${y + 30}px`;
+                labelRight.style.transform = 'translate(-50%, -50%)';
+                labelRight.style.zIndex = '6';
+                labelRight.style.animation = `fadeIn 0.5s ease ${depth * 0.2 + 0.2}s forwards`;
+                labelRight.style.opacity = '0';
+
+                container.appendChild(edgeRight);
+                container.appendChild(labelRight);
+
+                // 递归绘制右子树
+                visualizeTreeNode(node.right, container, rightX, rightY, width / 2, depth + 1);
+            }
+        }
+
+
+        // 更新编码结果显示
+        function updateCodingResult() {
+            const codingResultContainer = document.getElementById('coding-result');
+
+            if (Object.keys(huffmanData.codes).length === 0) {
+                codingResultContainer.innerHTML = `
+                    <div class="w-full text-center text-gray-500">
+                        <i class="fa fa-hourglass-half text-3xl mb-2"></i>
+                        <p>等待生成编码...</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // 创建编码表标题
+            const tableTitle = document.createElement('h4');
+            tableTitle.className = 'text-lg font-bold mb-3 text-primary';
+            tableTitle.innerHTML = '<i class="fa fa-table mr-2"></i>哈夫曼编码表';
+
+            // 创建编码表
+            const table = document.createElement('table');
+            table.className = 'w-full text-left border border-gray-200 rounded-lg overflow-hidden';
+            table.innerHTML = `
+                <thead>
+                    <tr class="bg-primary bg-opacity-10">
+                        <th class="table-cell font-bold py-3 px-4 border-b">字符</th>
+                        <th class="table-cell font-bold py-3 px-4 border-b">频率</th>
+                        <th class="table-cell font-bold py-3 px-4 border-b">编码</th>
+                        <th class="table-cell font-bold py-3 px-4 border-b">长度</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${huffmanData.currentChars.map(char => {
+                const freq = huffmanData.currentFrequencies[huffmanData.currentChars.indexOf(char)];
+                const code = huffmanData.codes[char];
+                return `
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="table-cell font-medium py-3 px-4">${char}</td>
+                                <td class="table-cell py-3 px-4">${freq}</td>
+                                <td class="table-cell py-3 px-4">
+                                    ${code.split('').map(bit =>
+                    `<span class="code-bit ${bit === '0' ? 'code-0' : 'code-1'}">${bit}</span>`
+                ).join(' ')}
+                                </td>
+                                <td class="table-cell py-3 px-4 font-medium">${code.length}</td>
+                            </tr>
+                        `;
+            }).join('')}
+                </tbody>
+            `;
+
+            // 创建编码说明
+            const codeExplanation = document.createElement('div');
+            codeExplanation.className = 'mt-3 mb-4 text-sm text-gray-600';
+            codeExplanation.innerHTML = `
+                <div class="flex items-center mb-1">
+                    <span class="code-bit code-0 mr-2">0</span>
+                    <span>表示向左子树移动</span>
+                </div>
+                <div class="flex items-center">
+                    <span class="code-bit code-1 mr-2">1</span>
+                    <span>表示向右子树移动</span>
+                </div>
+            `;
+
+            // 计算并添加统计信息
+            const stats = document.createElement('div');
+            stats.className = 'mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200';
+
+            const count = Object.values(huffmanData.codes).filter(code => code.length >= 3).length;
+
+            stats.innerHTML = `
+                <p class="font-bold mb-3 text-dark">编码长度统计：</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                        <div class="text-sm text-gray-600 mb-1">长度 ≥ 3 的字符数：</div>
+                        <div class="font-bold text-2xl text-primary">${count}</div>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                        <div class="text-sm text-gray-600 mb-1">平均编码长度：</div>
+                        <div class="font-bold text-2xl text-secondary">${calculateAverageCodeLength().toFixed(2)}</div>
+                    </div>
+                </div>
+                <div class="mt-3 text-sm text-gray-600">
+                    <p><i class="fa fa-info-circle mr-1 text-primary"></i> 哈夫曼编码是一种前缀编码，任何字符的编码都不是其他字符编码的前缀。</p>
+                    <p><i class="fa fa-info-circle mr-1 text-primary"></i> 频率越高的字符编码越短，这是哈夫曼编码的核心特点。</p>
+                </div>
+            `;
+
+            codingResultContainer.innerHTML = '';
+            codingResultContainer.appendChild(tableTitle);
+            codingResultContainer.appendChild(table);
+            codingResultContainer.appendChild(codeExplanation);
+            codingResultContainer.appendChild(stats);
+        }
+
+        // 计算平均编码长度
+        function calculateAverageCodeLength() {
+            const totalFrequency = huffmanData.currentFrequencies.reduce((sum, f) => sum + f, 0);
+            let weightedLength = 0;
+
+            huffmanData.currentChars.forEach((char, index) => {
+                const freq = huffmanData.currentFrequencies[index];
+                const codeLength = huffmanData.codes[char].length;
+                weightedLength += (freq / totalFrequency) * codeLength;
+            });
+
+            return weightedLength;
+        }
+
+        // 更新步骤按钮状态
+        function updateStepButtons() {
+            const prevBtn = document.getElementById('prev-step');
+            const nextBtn = document.getElementById('next-step');
+
+            prevBtn.disabled = huffmanData.currentStep === 0;
+            prevBtn.classList.toggle('opacity-50', huffmanData.currentStep === 0);
+
+            nextBtn.disabled = huffmanData.currentStep === huffmanData.steps.length - 1;
+            nextBtn.classList.toggle('opacity-50', huffmanData.currentStep === huffmanData.steps.length - 1);
+        }
+
+        // 上一步按钮事件
+        document.getElementById('prev-step').addEventListener('click', function () {
+            if (huffmanData.currentStep > 0) {
+                huffmanData.currentStep--;
+                visualizeHuffmanStep(huffmanData.currentStep);
+                updateStepButtons();
+            }
+        });
+
+        // 下一步按钮事件
+        document.getElementById('next-step').addEventListener('click', function () {
+            if (huffmanData.currentStep < huffmanData.steps.length - 1) {
+                huffmanData.currentStep++;
+                visualizeHuffmanStep(huffmanData.currentStep);
+                updateStepButtons();
+            }
+        });
+
+        // 显示全部按钮事件
+        document.getElementById('show-all').addEventListener('click', function () {
+            huffmanData.currentStep = huffmanData.steps.length - 1;
+            visualizeHuffmanStep(huffmanData.currentStep);
+            updateStepButtons();
+        });
+
+        // 自定义测试功能
+        document.getElementById('test-custom-input').addEventListener('click', function () {
+            const frequenciesInput = document.getElementById('custom-frequencies').value.trim();
+            const charsInput = document.getElementById('custom-chars').value.trim();
+
+            if (!frequenciesInput) {
+                alert('请输入频率');
+                return;
+            }
+
+            try {
+                // 解析输入频率
+                const frequencies = frequenciesInput.split(',').map(item => parseInt(item.trim(), 10));
+
+                // 验证频率
+                if (frequencies.some(isNaN) || frequencies.some(freq => freq <= 0)) {
+                    alert('请输入有效的正整数频率');
+                    return;
+                }
+
+                // 解析输入字符
+                let chars = [];
+                if (charsInput) {
+                    chars = charsInput.split(',').map(item => item.trim());
+
+                    // 验证字符
+                    if (chars.length !== frequencies.length) {
+                        alert('字符数量必须与频率数量相同');
+                        return;
+                    }
+                } else {
+                    // 生成默认字符 A, B, C, ...
+                    chars = Array(frequencies.length).fill().map((_, i) => String.fromCharCode(65 + i));
+                }
+
+                // 重置状态
+                huffmanData.currentStep = 0;
+                huffmanData.steps = [];
+                huffmanData.codes = {};
+
+                // 设置当前频率和字符
+                huffmanData.currentFrequencies = frequencies;
+                huffmanData.currentChars = chars;
+
+                // 构建哈夫曼树并保存每一步
+                buildHuffmanTree(frequencies, chars);
+
+                // 显示结果消息
+                const resultMessage = document.getElementById('custom-result-message');
+                resultMessage.className = 'bg-green-50 border-l-4 border-green-400 text-green-700 p-4 rounded-lg';
+                resultMessage.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="bg-green-100 text-green-500 rounded-full p-2 mr-3">
+                            <i class="fa fa-check"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold">哈夫曼编码生成成功</p>
+                            <p>输入频率: [${frequencies.join(', ')}]</p>
+                        </div>
+                    </div>
+                `;
+
+                // 可视化哈夫曼树
+                const customTreeContainer = document.getElementById('custom-tree-visualization');
+                customTreeContainer.innerHTML = '';
+
+                // 创建最终树的可视化
+                const treeTitle = document.createElement('h4');
+                treeTitle.className = 'text-xl font-bold mb-4';
+                treeTitle.textContent = '哈夫曼树';
+                customTreeContainer.appendChild(treeTitle);
+
+                // 简化版树可视化
+                visualizeSimpleHuffmanTree(huffmanData.huffmanTree, customTreeContainer);
+
+                // 显示编码结果
+                const codingResultContainer = document.getElementById('custom-coding-result');
+                codingResultContainer.innerHTML = '';
+
+                const codingTitle = document.createElement('h4');
+                codingTitle.className = 'text-xl font-bold mb-4';
+                codingTitle.textContent = '编码结果';
+                codingResultContainer.appendChild(codingTitle);
+
+                // 创建编码表
+                const table = document.createElement('table');
+                table.className = 'w-full text-left';
+                table.innerHTML = `
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="table-cell font-bold">字符</th>
+                            <th class="table-cell font-bold">频率</th>
+                            <th class="table-cell font-bold">编码</th>
+                            <th class="table-cell font-bold">长度</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${chars.map(char => {
+                    const freq = frequencies[chars.indexOf(char)];
+                    const code = huffmanData.codes[char];
+                    return `
+                                <tr>
+                                    <td class="table-cell font-medium">${char}</td>
+                                    <td class="table-cell">${freq}</td>
+                                    <td class="table-cell">
+                                        ${code.split('').map(bit =>
+                        `<span class="code-bit ${bit === '0' ? 'code-0' : 'code-1'}">${bit}</span>`
+                    ).join('')}
+                                    </td>
+                                    <td class="table-cell">${code.length}</td>
+                                </tr>
+                            `;
+                }).join('')}
+                    </tbody>
+                `;
+
+                codingResultContainer.appendChild(table);
+
+                // 显示答案
+                const answerContainer = document.getElementById('custom-answer');
+                const count = Object.values(huffmanData.codes).filter(code => code.length >= 3).length;
+
+                answerContainer.innerHTML = `
+                    <h4 class="font-bold mb-2 text-dark">编码长度分析</h4>
+                    <p class="text-gray-700 mb-2">
+                        编码长度不小于3的字符有 <span class="font-bold text-primary">${count}</span> 个。
+                    </p>
+                    <div class="flex items-center">
+                        <span class="mr-2">平均编码长度：</span>
+                        <span class="font-bold">${calculateAverageCodeLength().toFixed(2)}</span>
+                    </div>
+                `;
+
+                // 显示结果容器
+                document.getElementById('custom-result-container').classList.remove('hidden');
+
+                // 平滑滚动到结果
+                document.getElementById('custom-result-container').scrollIntoView({ behavior: 'smooth' });
+
+            } catch (error) {
+                alert('输入格式错误：' + error.message);
+            }
+        });
+
+        // 添加淡入动画
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+
+        // 简化版哈夫曼树可视化 - 用于自定义测试部分
+        function visualizeSimpleHuffmanTree(node, container, level = 0) {
+            if (!node) return;
+
+            // 创建树容器
+            const treeDiv = document.createElement('div');
+            treeDiv.className = 'relative';
+            treeDiv.style.minHeight = '300px';
+            container.appendChild(treeDiv);
+
+            // 使用递归方式绘制完整树
+            visualizeTreeNode(node, treeDiv, 50, 30, 180, 0);
+        }
+        // 自定义测试处理函数
+        function handleCustomTest() {
+            const frequencies = parseInput('custom-frequencies');
+
+            // 复用主可视化流程
+            const { steps } = buildHuffmanTreeSteps(frequencies);
+            currentCustomSteps = steps;
+            currentCustomStep = 0;
+
+            // 初始化自定义树容器
+            $('#custom-empty-message').hide();
+            $('#custom-tree-visualization').removeClass('hidden');
+            renderTreeSteps(currentCustomSteps, currentCustomStep, 'custom-tree-steps');
+
+            // 绑定步骤控制
+            $('#custom-prev-step').prop('disabled', true);
+            $('#custom-next-step').prop('disabled', false);
+        }
+
+        // 复用主可视化渲染方法
+        function renderTreeSteps(steps, currentStep, containerId) {
+            const container = $(`#${containerId}`);
+            container.empty();
+            // ... existing render logic ...
+        }
+    </script>
+</body>
+
+</html>

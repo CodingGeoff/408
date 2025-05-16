@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>括号匹配可视化工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        accent: '#F59E0B',
+                        danger: '#EF4444',
+                        dark: '#1F2937',
+                        light: '#F9FAFB'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .stack-container {
+                @apply relative h-64 w-32 mx-auto border-2 border-gray-300 rounded-lg overflow-hidden;
+            }
+            .stack-item {
+                @apply absolute left-0 right-0 h-12 flex items-center justify-center font-bold transition-all duration-300;
+            }
+            .char-highlight {
+                @apply bg-yellow-200 rounded;
+            }
+            .bracket-correct {
+                @apply text-green-500 font-bold;
+            }
+            .bracket-incorrect {
+                @apply text-red-500 font-bold;
+            }
+            .bracket-neutral {
+                @apply text-gray-500 font-bold;
+            }
+            .step-btn {
+                @apply px-4 py-2 rounded-lg font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+            }
+            .option-card {
+                @apply p-4 border rounded-lg mb-3 cursor-pointer transition-all duration-200 hover:shadow-md;
+            }
+            .option-card-selected {
+                @apply border-primary bg-primary/5;
+            }
+            .animation-pulse {
+                animation: pulse 1.5s infinite;
+            }
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.5; }
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-light to-blue-50 min-h-screen font-sans">
+    <!-- 头部导航 -->
+    <header class="bg-white shadow-md sticky top-0 z-50 transition-all duration-300">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa fa-balance-scale text-primary text-3xl"></i>
+                <h1 class="text-2xl font-bold text-dark">括号匹配<span class="text-primary">可视化工具</span></h1>
+            </div>
+            <nav class="hidden md:flex space-x-8">
+                <a href="#problem" class="text-dark hover:text-primary transition-colors duration-200 font-medium">题目</a>
+                <a href="#visualizer" class="text-dark hover:text-primary transition-colors duration-200 font-medium">可视化</a>
+                <a href="#explanation" class="text-dark hover:text-primary transition-colors duration-200 font-medium">解释</a>
+                <a href="#practice" class="text-dark hover:text-primary transition-colors duration-200 font-medium">练习</a>
+            </nav>
+            <button title="menu" class="md:hidden text-dark text-2xl" id="menuBtn">
+                <i class="fa fa-bars"></i>
+            </button>
+        </div>
+        <div class="md:hidden hidden bg-white w-full" id="mobileMenu">
+            <div class="container mx-auto px-4 py-2 flex flex-col space-y-3">
+                <a href="#problem" class="text-dark hover:text-primary transition-colors duration-200 py-2 border-b border-gray-100">题目</a>
+                <a href="#visualizer" class="text-dark hover:text-primary transition-colors duration-200 py-2 border-b border-gray-100">可视化</a>
+                <a href="#explanation" class="text-dark hover:text-primary transition-colors duration-200 py-2 border-b border-gray-100">解释</a>
+                <a href="#practice" class="text-dark hover:text-primary transition-colors duration-200 py-2">练习</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- 问题部分 -->
+        <section id="problem" class="mb-16">
+            <div class="bg-white rounded-xl shadow-xl p-6 md:p-10">
+                <h2 class="text-3xl font-bold text-dark mb-6">题目</h2>
+                <div class="mb-6">
+                    <p class="text-lg text-gray-700 mb-4">
+                        2. 已知算法 A 用于检查子图串中各类括号是否匹配，A 执行过程中使用初始为空的栈保存遇到的括号。若栈的容量是 3，则下列选项中，A 不能处理的是 ( )。
+                    </p>
+                    
+                    <div class="space-y-3 mb-6" id="options-container">
+                        <div class="option-card" data-option="A">
+                            <span class="font-bold text-primary mr-2">A.</span>
+                            <span class="bracket-text">(a+[b+(c+d)/e]+f)+g−h</span>
+                        </div>
+                        <div class="option-card" data-option="B">
+                            <span class="font-bold text-primary mr-2">B.</span>
+                            <span class="bracket-text">[a∗((b+c)/(d−e)+f/g)]−h</span>
+                        </div>
+                        <div class="option-card" data-option="C">
+                            <span class="font-bold text-primary mr-2">C.</span>
+                            <span class="bracket-text">[a*(b-(c-d)*e)/(f+g)-h]</span>
+                        </div>
+                        <div class="option-card" data-option="D">
+                            <span class="font-bold text-primary mr-2">D.</span>
+                            <span class="bracket-text">[a-(b+[c*(d+e)-f]+g)+h]</span>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg mb-6" id="selected-option-display">
+                        <h3 class="font-bold mb-2">当前选择：</h3>
+                        <p class="text-gray-700" id="selected-option-text">请选择一个选项进行可视化</p>
+                    </div>
+                    
+                    <button id="visualize-option" class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center w-full md:w-auto">
+                        <i class="fa fa-play-circle mr-2"></i> 可视化括号匹配过程
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 可视化工具部分 -->
+        <section id="visualizer" class="mb-16 hidden">
+            <div class="bg-white rounded-xl shadow-xl p-6 md:p-10">
+                <h2 class="text-3xl font-bold text-dark mb-8">括号匹配可视化</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2">
+                        <h3 class="text-xl font-bold mb-4">输入字符串</h3>
+                        <div class="bg-gray-50 p-4 rounded-lg mb-6 overflow-x-auto" id="input-string-display">
+                            <span id="current-char-index">0</span>.
+                            <span id="input-string-content" class="text-lg">请选择一个选项进行可视化</span>
+                        </div>
+                        
+                        <h3 class="text-xl font-bold mb-4">匹配状态</h3>
+                        <div class="bg-gray-50 p-4 rounded-lg mb-6" id="match-status">
+                            <div class="flex items-center mb-2">
+                                <span class="font-bold mr-2">栈状态：</span>
+                                <span id="stack-status" class="text-gray-700">空</span>
+                            </div>
+                            <div class="flex items-center mb-2">
+                                <span class="font-bold mr-2">当前操作：</span>
+                                <span id="current-operation" class="text-gray-700">等待开始</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="font-bold mr-2">栈容量：</span>
+                                <span id="stack-capacity" class="text-gray-700">3/3</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex space-x-4" id="control-buttons">
+                            <button id="start-visualization" class="step-btn bg-primary text-white hover:bg-primary/90 focus:ring-primary">
+                                <i class="fa fa-play mr-2"></i>开始
+                            </button>
+                            <button id="step-visualization" class="step-btn bg-secondary text-white hover:bg-secondary/90 focus:ring-secondary">
+                                <i class="fa fa-step-forward mr-2"></i>下一步
+                            </button>
+                            <button id="reset-visualization" class="step-btn bg-gray-300 text-gray-800 hover:bg-gray-400 focus:ring-gray-400">
+                                <i class="fa fa-refresh mr-2"></i>重置
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-xl font-bold mb-4">栈可视化 (容量=3)</h3>
+                        <div class="bg-gray-50 p-4 rounded-lg mb-6 h-72 flex flex-col items-center justify-center" id="stack-visualization">
+                            <div class="stack-container">
+                                <!-- 栈元素将动态添加 -->
+                                <div class="absolute bottom-0 left-0 right-0 h-2 bg-gray-300"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-primary/10 rounded-lg p-4">
+                            <h4 class="font-bold mb-2 text-primary">规则说明</h4>
+                            <ul class="text-gray-700 space-y-2">
+                                <li>遇到左括号 ( [ { 时，将其压入栈</li>
+                                <li>遇到右括号 ) ] } 时，弹出栈顶元素</li>
+                                <li>弹出的左括号必须与当前右括号匹配</li>
+                                <li>处理完所有字符后，栈必须为空</li>
+                                <li>栈的最大容量为 3 个元素</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8" id="result-container">
+                    <h3 class="text-xl font-bold mb-4">匹配结果</h3>
+                    <div class="rounded-lg p-4" id="result-message">
+                        <!-- 结果将动态显示 -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 解释部分 -->
+        <section id="explanation" class="mb-16">
+            <div class="bg-white rounded-xl shadow-xl p-6 md:p-10">
+                <h2 class="text-3xl font-bold text-dark mb-8">括号匹配原理解释</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-xl font-bold mb-4 text-primary">栈的工作原理</h3>
+                        <p class="text-gray-600 mb-4">
+                            栈是一种后进先出（LIFO）的数据结构，非常适合用于检查括号匹配。
+                            在处理括号匹配问题时，栈的基本操作如下：
+                        </p>
+                        <ol class="list-decimal list-inside text-gray-600 space-y-2 mb-6">
+                            <li>遇到左括号 ( [ { 时，将其压入栈顶</li>
+                            <li>遇到右括号 ) ] } 时，弹出栈顶元素</li>
+                            <li>检查弹出的左括号是否与当前右括号匹配</li>
+                            <li>如果不匹配，或者栈为空而遇到右括号，则括号不匹配</li>
+                            <li>处理完所有字符后，如果栈不为空，则括号不匹配</li>
+                        </ol>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                            <h4 class="font-bold mb-2">栈容量限制的影响</h4>
+                            <p class="text-gray-600">
+                                当栈的容量有限制时（如本题中的3），如果在处理过程中栈的元素数量超过容量，
+                                则算法无法继续处理，即使最终括号可能是匹配的。
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-xl font-bold mb-4 text-secondary">如何判断选项是否可处理</h3>
+                        <p class="text-gray-600 mb-4">
+                            对于每个选项，我们需要模拟栈的操作过程，检查是否会出现以下情况：
+                        </p>
+                        <ul class="list-disc list-inside text-gray-600 space-y-2 mb-6">
+                            <li>栈溢出：栈的元素数量超过容量（3）</li>
+                            <li>不匹配的括号：弹出的左括号与当前右括号类型不匹配</li>
+                            <li>栈为空时遇到右括号</li>
+                            <li>处理完所有字符后，栈不为空</li>
+                        </ul>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-bold mb-2">本题答案分析</h4>
+                            <p class="text-gray-600 mb-2">
+                                正确答案是选项 <span class="font-bold text-primary">D</span>，因为：
+                            </p>
+                            <pre class="text-sm mb-2"><code>D. [a-(b+[c*(d+e)-f]+g)+h]</code></pre>
+                            <p class="text-gray-600">
+                                当处理到第二个左括号 [ 时，栈中已有两个元素 [ 和 (，再压入这个 [ 会导致栈溢出（容量超过3）。
+                                因此，算法A无法处理这个字符串。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 练习部分 -->
+        <section id="practice" class="mb-16">
+            <div class="bg-white rounded-xl shadow-xl p-6 md:p-10">
+                <h2 class="text-3xl font-bold text-dark mb-8">练习与巩固</h2>
+                
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold mb-4">自定义测试</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="custom-input" class="block text-gray-700 font-bold mb-2">输入字符串</label>
+                            <input type="text" id="custom-input" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all" placeholder="例如: [a+(b*c)]-d">
+                        </div>
+                        <div>
+                            <label for="custom-stack-capacity" class="block text-gray-700 font-bold mb-2">栈容量</label>
+                            <input type="number" id="custom-stack-capacity" min="1" max="10" value="3" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all">
+                        </div>
+                    </div>
+                    <button id="test-custom-input" class="mt-4 bg-accent hover:bg-accent/90 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-[1.02]">
+                        <i class="fa fa-check-circle mr-2"></i> 测试括号匹配
+                    </button>
+                </div>
+                
+                <div class="bg-gray-50 rounded-lg p-6" id="custom-result-container">
+                    <h3 class="text-xl font-bold mb-4">测试结果</h3>
+                    <div id="custom-result-message" class="mb-4">
+                        <!-- 结果将动态显示 -->
+                    </div>
+                    <div id="custom-stack-visualization" class="mb-4">
+                        <!-- 栈可视化将动态显示 -->
+                    </div>
+                    <div id="custom-matching-steps" class="space-y-2">
+                        <!-- 匹配步骤将动态显示 -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-dark text-white py-10">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">括号匹配可视化工具</h3>
+                    <p class="text-gray-400">
+                        帮助理解栈在括号匹配中的应用的交互式学习工具。
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold mb-4">快速链接</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#problem" class="text-gray-400 hover:text-white transition-colors">题目</a></li>
+                        <li><a href="#visualizer" class="text-gray-400 hover:text-white transition-colors">可视化</a></li>
+                        <li><a href="#explanation" class="text-gray-400 hover:text-white transition-colors">解释</a></li>
+                        <li><a href="#practice" class="text-gray-400 hover:text-white transition-colors">练习</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold mb-4">关注我们</h3>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors text-xl">
+                            <i class="fa fa-github"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors text-xl">
+                            <i class="fa fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors text-xl">
+                            <i class="fa fa-linkedin"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2025 括号匹配可视化工具 | 版权所有</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 移动菜单切换
+        document.getElementById('menuBtn').addEventListener('click', function() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // 选项选择功能
+        const options = document.querySelectorAll('.option-card');
+        let selectedOption = null;
+        
+        options.forEach(option => {
+            option.addEventListener('click', function() {
+                options.forEach(opt => opt.classList.remove('option-card-selected'));
+                this.classList.add('option-card-selected');
+                selectedOption = this;
+                
+                // 更新显示
+                const optionText = this.querySelector('.bracket-text').textContent;
+                document.getElementById('selected-option-text').innerHTML = 
+                    `<span class="font-bold text-primary">${this.dataset.option}.</span> ${optionText}`;
+            });
+        });
+
+        // 可视化选项
+        document.getElementById('visualize-option').addEventListener('click', function() {
+            if (!selectedOption) {
+                alert('请先选择一个选项');
+                return;
+            }
+            
+            const optionText = selectedOption.querySelector('.bracket-text').textContent;
+            const optionValue = selectedOption.dataset.option;
+            
+            // 更新可视化界面
+            document.getElementById('input-string-content').textContent = optionText;
+            document.getElementById('input-string-display').querySelector('span').textContent = '0';
+            
+            // 重置栈
+            resetStackVisualization();
+            
+            // 显示可视化部分
+            document.getElementById('visualizer').classList.remove('hidden');
+            document.getElementById('result-container').classList.add('hidden');
+            
+            // 平滑滚动到可视化部分
+            document.getElementById('visualizer').scrollIntoView({ behavior: 'smooth' });
+            
+            // 设置当前选项的数据
+            visualizationData.currentOption = optionValue;
+            visualizationData.currentString = optionText;
+            visualizationData.currentIndex = 0;
+            visualizationData.stack = [];
+            visualizationData.stackCapacity = 3;
+            visualizationData.steps = [];
+            visualizationData.isRunning = false;
+            
+            // 更新栈状态显示
+            updateStackStatus();
+        });
+
+        // 栈可视化功能
+        const visualizationData = {
+            currentOption: null,
+            currentString: '',
+            currentIndex: 0,
+            stack: [],
+            stackCapacity: 3,
+            steps: [],
+            isRunning: false
+        };
+        
+        function resetStackVisualization() {
+            const stackContainer = document.querySelector('.stack-container');
+            stackContainer.innerHTML = '<div class="absolute bottom-0 left-0 right-0 h-2 bg-gray-300"></div>';
+        }
+        
+        function updateStackStatus() {
+            const stackStatus = document.getElementById('stack-status');
+            const currentOperation = document.getElementById('current-operation');
+            const stackCapacity = document.getElementById('stack-capacity');
+            
+            if (visualizationData.stack.length === 0) {
+                stackStatus.textContent = '空';
+            } else {
+                stackStatus.textContent = visualizationData.stack.join(' → ');
+            }
+            
+            stackCapacity.textContent = `${visualizationData.stack.length}/${visualizationData.stackCapacity}`;
+            
+            if (visualizationData.currentIndex === 0) {
+                currentOperation.textContent = '准备开始';
+            } else if (visualizationData.currentIndex > visualizationData.currentString.length) {
+                currentOperation.textContent = '处理完成';
+            } else {
+                const currentChar = visualizationData.currentString[visualizationData.currentIndex - 1];
+                if (isOpeningBracket(currentChar)) {
+                    currentOperation.textContent = `压入栈: ${currentChar}`;
+                } else if (isClosingBracket(currentChar)) {
+                    currentOperation.textContent = `弹出栈: ${currentChar}`;
+                } else {
+                    currentOperation.textContent = `忽略字符: ${currentChar}`;
+                }
+            }
+        }
+        
+        function isOpeningBracket(char) {
+            return ['(', '[', '{'].includes(char);
+        }
+        
+        function isClosingBracket(char) {
+            return [')', ']', '}'].includes(char);
+        }
+        
+        function getMatchingOpeningBracket(char) {
+            const pairs = {
+                ')': '(',
+                ']': '[',
+                '}': '{'
+            };
+            return pairs[char];
+        }
+        
+        function updateStackVisualization() {
+            const stackContainer = document.querySelector('.stack-container');
+            stackContainer.innerHTML = '<div class="absolute bottom-0 left-0 right-0 h-2 bg-gray-300"></div>';
+            
+            const stackHeight = 60; // 栈容器高度
+            const itemHeight = 44; // 每个栈元素高度
+            const spacing = 4; // 元素间距
+            
+            visualizationData.stack.forEach((char, index) => {
+                const item = document.createElement('div');
+                item.className = 'stack-item bg-primary text-white';
+                item.style.bottom = `${index * (itemHeight + spacing)}px`;
+                item.textContent = char;
+                
+                // 为最后一个元素添加动画效果
+                if (index === visualizationData.stack.length - 1) {
+                    item.classList.add('animation-pulse');
+                }
+                
+                stackContainer.appendChild(item);
+            });
+        }
+        
+        function highlightCurrentChar() {
+            const content = document.getElementById('input-string-content');
+            const text = visualizationData.currentString;
+            
+            if (visualizationData.currentIndex >= text.length) {
+                content.innerHTML = text;
+                return;
+            }
+            
+            let highlightedText = '';
+            for (let i = 0; i < text.length; i++) {
+                if (i === visualizationData.currentIndex) {
+                    highlightedText += `<span class="char-highlight">${text[i]}</span>`;
+                } else {
+                    highlightedText += text[i];
+                }
+            }
+            
+            content.innerHTML = highlightedText;
+            document.getElementById('current-char-index').textContent = visualizationData.currentIndex;
+        }
+        
+        function processNextChar() {
+            if (visualizationData.currentIndex >= visualizationData.currentString.length) {
+                finishVisualization();
+                return;
+            }
+            
+            const currentChar = visualizationData.currentString[visualizationData.currentIndex];
+            
+            if (isOpeningBracket(currentChar)) {
+                // 检查栈容量
+                if (visualizationData.stack.length >= visualizationData.stackCapacity) {
+                    visualizationData.steps.push({
+                        char: currentChar,
+                        operation: '压入失败',
+                        success: false,
+                        message: `栈溢出: 无法压入 ${currentChar}，栈容量为 ${visualizationData.stackCapacity}`
+                    });
+                    finishVisualization(false, `栈溢出: 无法压入 ${currentChar}`);
+                    return;
+                }
+                
+                // 压入栈
+                visualizationData.stack.push(currentChar);
+                visualizationData.steps.push({
+                    char: currentChar,
+                    operation: '压入栈',
+                    success: true,
+                    stack: [...visualizationData.stack]
+                });
+            } else if (isClosingBracket(currentChar)) {
+                // 检查栈是否为空
+                if (visualizationData.stack.length === 0) {
+                    visualizationData.steps.push({
+                        char: currentChar,
+                        operation: '匹配失败',
+                        success: false,
+                        message: `栈为空，无法匹配 ${currentChar}`
+                    });
+                    finishVisualization(false, `栈为空，遇到不匹配的右括号 ${currentChar}`);
+                    return;
+                }
+                
+                // 弹出栈顶元素并检查匹配
+                const topElement = visualizationData.stack.pop();
+                const matchingOpening = getMatchingOpeningBracket(currentChar);
+                
+                if (topElement !== matchingOpening) {
+                    visualizationData.steps.push({
+                        char: currentChar,
+                        operation: '匹配失败',
+                        success: false,
+                        message: `不匹配: 栈顶元素 ${topElement} 与 ${currentChar} 不匹配`
+                    });
+                    finishVisualization(false, `括号不匹配: ${topElement} 与 ${currentChar}`);
+                    return;
+                }
+                
+                visualizationData.steps.push({
+                    char: currentChar,
+                    operation: '弹出栈',
+                    success: true,
+                    stack: [...visualizationData.stack]
+                });
+            } else {
+                // 忽略非括号字符
+                visualizationData.steps.push({
+                    char: currentChar,
+                    operation: '忽略',
+                    success: true,
+                    stack: [...visualizationData.stack]
+                });
+            }
+            
+            visualizationData.currentIndex++;
+            updateStackStatus();
+            updateStackVisualization();
+            highlightCurrentChar();
+        }
+        
+        function finishVisualization(isSuccess = true, message = '') {
+            visualizationData.isRunning = false;
+            document.getElementById('start-visualization').disabled = true;
+            document.getElementById('step-visualization').disabled = true;
+            
+            const resultContainer = document.getElementById('result-container');
+            const resultMessage = document.getElementById('result-message');
+            
+            resultContainer.classList.remove('hidden');
+            
+            if (!isSuccess) {
+                resultMessage.className = 'bg-red-50 border-l-4 border-red-400 text-red-700 p-4 rounded-lg';
+                resultMessage.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="bg-red-100 text-red-500 rounded-full p-2 mr-3">
+                            <i class="fa fa-times"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold">匹配失败</p>
+                            <p>${message}</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 检查栈是否为空
+            if (visualizationData.stack.length !== 0) {
+                resultMessage.className = 'bg-red-50 border-l-4 border-red-400 text-red-700 p-4 rounded-lg';
+                resultMessage.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="bg-red-100 text-red-500 rounded-full p-2 mr-3">
+                            <i class="fa fa-times"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold">匹配失败</p>
+                            <p>处理完所有字符后，栈不为空: ${visualizationData.stack.join(' → ')}，括号不匹配</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            resultMessage.className = 'bg-green-50 border-l-4 border-green-400 text-green-700 p-4 rounded-lg';
+            resultMessage.innerHTML = `
+                <div class="flex items-center">
+                    <div class="bg-green-100 text-green-500 rounded-full p-2 mr-3">
+                        <i class="fa fa-check"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold">匹配成功</p>
+                        <p>所有括号都正确匹配，并且处理完所有字符后栈为空</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 控制按钮事件
+        document.getElementById('start-visualization').addEventListener('click', function() {
+            visualizationData.isRunning = true;
+            this.disabled = true;
+            
+            function runStep() {
+                if (!visualizationData.isRunning || visualizationData.currentIndex >= visualizationData.currentString.length) {
+                    return;
+                }
+                
+                processNextChar();
+                setTimeout(runStep, 500);
+            }
+            
+            runStep();
+        });
+        
+        document.getElementById('step-visualization').addEventListener('click', function() {
+            processNextChar();
+        });
+        
+        document.getElementById('reset-visualization').addEventListener('click', function() {
+            visualizationData.currentIndex = 0;
+            visualizationData.stack = [];
+            visualizationData.isRunning = false;
+            
+            updateStackStatus();
+            updateStackVisualization();
+            highlightCurrentChar();
+            
+            document.getElementById('start-visualization').disabled = false;
+            document.getElementById('step-visualization').disabled = false;
+            document.getElementById('result-container').classList.add('hidden');
+        });
+        
+        // 初始化高亮
+        highlightCurrentChar();
+
+        // 自定义测试功能
+        document.getElementById('test-custom-input').addEventListener('click', function() {
+            const input = document.getElementById('custom-input').value.trim();
+            const capacity = parseInt(document.getElementById('custom-stack-capacity').value);
+            
+            if (!input) {
+                alert('请输入测试字符串');
+                return;
+            }
+            
+            if (isNaN(capacity) || capacity < 1) {
+                alert('请输入有效的栈容量（至少为1）');
+                return;
+            }
+            
+            // 执行括号匹配测试
+            const result = testBracketMatching(input, capacity);
+            
+            // 显示结果
+            const resultContainer = document.getElementById('custom-result-container');
+            const resultMessage = document.getElementById('custom-result-message');
+            const stackVisualization = document.getElementById('custom-stack-visualization');
+            const matchingSteps = document.getElementById('custom-matching-steps');
+            
+            resultContainer.classList.remove('hidden');
+            
+            if (!result.success) {
+                resultMessage.className = 'bg-red-50 border-l-4 border-red-400 text-red-700 p-4 rounded-lg';
+                resultMessage.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="bg-red-100 text-red-500 rounded-full p-2 mr-3">
+                            <i class="fa fa-times"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold">匹配失败</p>
+                            <p>${result.message}</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                resultMessage.className = 'bg-green-50 border-l-4 border-green-400 text-green-700 p-4 rounded-lg';
+                resultMessage.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="bg-green-100 text-green-500 rounded-full p-2 mr-3">
+                            <i class="fa fa-check"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold">匹配成功</p>
+                            <p>所有括号都正确匹配，并且处理完所有字符后栈为空</p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // 显示栈可视化
+            stackVisualization.innerHTML = `
+                <h4 class="font-bold mb-2">最终栈状态</h4>
+                <div class="flex items-center justify-center">
+                    <div class="relative h-24 w-20 border-2 border-gray-300 rounded-lg overflow-hidden">
+                        ${result.finalStack.length === 0 ? 
+                          '<div class="absolute inset-0 flex items-center justify-center text-gray-400">空</div>' : 
+                          result.finalStack.map((char, index) => `
+                            <div class="absolute left-0 right-0 h-6 flex items-center justify-center font-bold bg-primary text-white" 
+                                 style="bottom: ${index * 6}px">${char}</div>
+                          `).join('')}
+                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-gray-300"></div>
+                    </div>
+                </div>
+            `;
+            
+            // 显示匹配步骤
+            matchingSteps.innerHTML = '';
+            result.steps.forEach((step, index) => {
+                const stepEl = document.createElement('div');
+                stepEl.className = `flex items-center p-2 rounded-lg ${step.success ? 'bg-green-50' : 'bg-red-50'}`;
+                stepEl.innerHTML = `
+                    <span class="font-bold mr-2">${index + 1}.</span>
+                    <span>处理 <span class="font-bold">${step.char}</span>: ${step.operation}</span>
+                    <span class="ml-auto font-mono">当前栈内元素：${step.stack.length === 0 ? '空' : `${step.stack.join(',')}`}</span>
+                `;
+                matchingSteps.appendChild(stepEl);
+            });
+            
+            // 平滑滚动到结果
+            resultContainer.scrollIntoView({ behavior: 'smooth' });
+        });
+        
+        function testBracketMatching(input, capacity) {
+            const stack = [];
+            const steps = [];
+            
+            for (let i = 0; i < input.length; i++) {
+                const char = input[i];
+                
+                if (isOpeningBracket(char)) {
+                    // 检查栈容量
+                    if (stack.length >= capacity) {
+                        steps.push({
+                            char,
+                            operation: '压入失败',
+                            success: false,
+                            message: `栈溢出: 无法压入 ${char}，栈容量为 ${capacity}`
+                        });
+                        return {
+                            success: false,
+                            message: `在位置 ${i}: 栈溢出，无法压入 ${char}`,
+                            finalStack: stack,
+                            steps
+                        };
+                    }
+                    
+                    // 压入栈
+                    stack.push(char);
+                    steps.push({
+                        char,
+                        operation: '压入栈',
+                        success: true,
+                        stack: [...stack]
+                    });
+                } else if (isClosingBracket(char)) {
+                    // 检查栈是否为空
+                    if (stack.length === 0) {
+                        steps.push({
+                            char,
+                            operation: '匹配失败',
+                            success: false,
+                            message: `栈为空，无法匹配 ${char}`
+                        });
+                        return {
+                            success: false,
+                            message: `在位置 ${i}: 栈为空，遇到不匹配的右括号 ${char}`,
+                            finalStack: stack,
+                            steps
+                        };
+                    }
+                    
+                    // 弹出栈顶元素并检查匹配
+                    const topElement = stack.pop();
+                    const matchingOpening = getMatchingOpeningBracket(char);
+                    
+                    if (topElement !== matchingOpening) {
+                        steps.push({
+                            char,
+                            operation: '匹配失败',
+                            success: false,
+                            message: `不匹配: 栈顶元素 ${topElement} 与 ${char} 不匹配`
+                        });
+                        return {
+                            success: false,
+                            message: `在位置 ${i}: 括号不匹配，${topElement} 与 ${char}`,
+                            finalStack: stack,
+                            steps
+                        };
+                    }
+                    
+                    steps.push({
+                        char,
+                        operation: '弹出栈',
+                        success: true,
+                        stack: [...stack]
+                    });
+                } else {
+                    // 忽略非括号字符
+                    steps.push({
+                        char,
+                        operation: '忽略',
+                        success: true,
+                        stack: [...stack]
+                    });
+                }
+            }
+            
+            // 检查栈是否为空
+            if (stack.length !== 0) {
+                return {
+                    success: false,
+                    message: `处理完所有字符后，栈不为空: ${stack.join(' → ')}，括号不匹配`,
+                    finalStack: stack,
+                    steps
+                };
+            }
+            
+            return {
+                success: true,
+                message: '括号匹配成功',
+                finalStack: stack,
+                steps
+            };
+        }
+
+        // 平滑滚动
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                    
+                    // 关闭移动菜单
+                    document.getElementById('mobileMenu').classList.add('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>    

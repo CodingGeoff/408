@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>算法时间复杂度可视化工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        accent: '#F59E0B',
+                        dark: '#1F2937',
+                        light: '#F9FAFB'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .loop-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(20px, 1fr));
+                gap: 2px;
+            }
+            .loop-cell {
+                aspect-ratio: 1/1;
+                transition: all 0.3s ease;
+            }
+            .animate-fill {
+                animation: fill 0.3s ease forwards;
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+            @keyframes fill {
+                from { opacity: 0; transform: scale(0.8); }
+                to { opacity: 1; transform: scale(1); }
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-light to-blue-50 min-h-screen font-sans">
+    <header class="bg-white shadow-md sticky top-0 z-50 transition-all duration-300" id="header">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa fa-calculator text-primary text-3xl"></i>
+                <h1 class="text-2xl font-bold text-dark">算法时间复杂度<span class="text-primary">可视化工具</span></h1>
+            </div>
+            <nav class="hidden md:flex space-x-8">
+                <a href="#examples" class="text-dark hover:text-primary transition-colors duration-200 font-medium">示例</a>
+                <a href="#visualizer" class="text-dark hover:text-primary transition-colors duration-200 font-medium">可视化</a>
+                <a href="#explanation" class="text-dark hover:text-primary transition-colors duration-200 font-medium">概念</a>
+                <a href="#practice" class="text-dark hover:text-primary transition-colors duration-200 font-medium">练习</a>
+            </nav>
+            <button class="md:hidden text-dark text-2xl" id="menuBtn">
+                <i class="fa fa-bars"></i>
+            </button>
+        </div>
+        <div class="md:hidden hidden bg-white w-full" id="mobileMenu">
+            <div class="container mx-auto px-4 py-2 flex flex-col space-y-3">
+                <a href="#examples" class="text-dark hover:text-primary transition-colors duration-200 py-2 border-b border-gray-100">示例</a>
+                <a href="#visualizer" class="text-dark hover:text-primary transition-colors duration-200 py-2 border-b border-gray-100">可视化</a>
+                <a href="#explanation" class="text-dark hover:text-primary transition-colors duration-200 py-2 border-b border-gray-100">概念</a>
+                <a href="#practice" class="text-dark hover:text-primary transition-colors duration-200 py-2">练习</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- 介绍部分 -->
+        <section class="mb-16 text-center">
+            <h2 class="text-[clamp(2rem,5vw,3.5rem)] font-bold text-dark mb-6">理解算法时间复杂度</h2>
+            <p class="text-lg text-gray-600 max-w-3xl mx-auto mb-8">
+                通过交互式可视化，直观理解不同算法的时间复杂度是如何随着输入规模增长而变化的。
+                这是学习算法分析的强大工具。
+            </p>
+            <div class="flex flex-wrap justify-center gap-4 mb-12">
+                <div class="bg-white p-6 rounded-xl shadow-lg card-hover w-full md:w-80">
+                    <div class="text-primary text-4xl mb-4">
+                        <i class="fa fa-code"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">代码分析</h3>
+                    <p class="text-gray-600">输入代码，可视化循环执行过程，理解时间复杂度计算。</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg card-hover w-full md:w-80">
+                    <div class="text-secondary text-4xl mb-4">
+                        <i class="fa fa-chart-line"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">增长趋势</h3>
+                    <p class="text-gray-600">观察不同复杂度函数随输入规模增长的趋势对比。</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg card-hover w-full md:w-80">
+                    <div class="text-accent text-4xl mb-4">
+                        <i class="fa fa-tasks"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">练习测试</h3>
+                    <p class="text-gray-600">通过交互式练习巩固对时间复杂度的理解。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 示例部分 -->
+        <section id="examples" class="mb-16">
+            <h2 class="text-3xl font-bold text-dark mb-8 text-center">常见时间复杂度示例</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- O(1) 示例 -->
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <span class="bg-primary/10 text-primary rounded-full w-8 h-8 flex items-center justify-center mr-2">O(1)</span>
+                        常数时间
+                    </h3>
+                    <pre class="bg-gray-50 p-4 rounded-lg text-sm mb-4 overflow-x-auto">
+function getFirstElement(arr) {
+    return arr[0];
+}</pre>
+                    <p class="text-gray-600 mb-4">无论数组大小如何，操作时间恒定。</p>
+                    <div class="loop-grid h-12 bg-gray-100 rounded-lg overflow-hidden">
+                        <div class="loop-cell bg-primary"></div>
+                    </div>
+                </div>
+
+                <!-- O(n) 示例 -->
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <span class="bg-secondary/10 text-secondary rounded-full w-8 h-8 flex items-center justify-center mr-2">O(n)</span>
+                        线性时间
+                    </h3>
+                    <pre class="bg-gray-50 p-4 rounded-lg text-sm mb-4 overflow-x-auto">
+function sumArray(arr) {
+    let sum = 0;
+    for (let i = 0; i < arr.length; i++) {
+        sum += arr[i];
+    }
+    return sum;
+}</pre>
+                    <p class="text-gray-600 mb-4">操作时间与输入规模成线性关系。</p>
+                    <div class="loop-grid h-12 bg-gray-100 rounded-lg overflow-hidden" id="on-example">
+                        <!-- 动态生成单元格 -->
+                    </div>
+                </div>
+
+                <!-- O(n²) 示例 -->
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <span class="bg-accent/10 text-accent rounded-full w-8 h-8 flex items-center justify-center mr-2">O(n²)</span>
+                        平方时间
+                    </h3>
+                    <pre class="bg-gray-50 p-4 rounded-lg text-sm mb-4 overflow-x-auto">
+function bubbleSort(arr) {
+    const n = arr.length;
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n - i - 1; j++) {
+            if (arr[j] > arr[j + 1]) {
+                [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+            }
+        }
+    }
+    return arr;
+}</pre>
+                    <p class="text-gray-600 mb-4">操作时间与输入规模的平方成正比。</p>
+                    <div class="loop-grid h-24 bg-gray-100 rounded-lg overflow-hidden" id="on2-example">
+                        <!-- 动态生成单元格 -->
+                    </div>
+                </div>
+
+                <!-- O(log n) 示例 -->
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <span class="bg-purple-500/10 text-purple-500 rounded-full w-8 h-8 flex items-center justify-center mr-2 py-1 px-2">O(log n)</span>
+                        对数时间
+                    </h3>
+                    <pre class="bg-gray-50 p-4 rounded-lg text-sm mb-4 overflow-x-auto">
+function binarySearch(arr, target) {
+    let left = 0;
+    let right = arr.length - 1;
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        if (arr[mid] === target) return mid;
+        if (arr[mid] < target) left = mid + 1;
+        else right = mid - 1;
+    }
+    return -1;
+}</pre>
+                    <p class="text-gray-600 mb-4">每次操作将问题规模减半。</p>
+                    <div class="loop-grid h-12 bg-gray-100 rounded-lg overflow-hidden" id="ologn-example">
+                        <!-- 动态生成单元格 -->
+                    </div>
+                </div>
+
+                <!-- O(n log n) 示例 -->
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <span class="bg-red-500/10 text-red-500 rounded-full w-8 h-8 flex items-center justify-center mr-2">O(n log n)</span>
+                        线性对数时间
+                    </h3>
+                    <pre class="bg-gray-50 p-4 rounded-lg text-sm mb-4 overflow-x-auto">
+function mergeSort(arr) {
+    if (arr.length <= 1) return arr;
+    const mid = Math.floor(arr.length / 2);
+    const left = mergeSort(arr.slice(0, mid));
+    const right = mergeSort(arr.slice(mid));
+    return merge(left, right);
+}
+
+function merge(left, right) {
+    const result = [];
+    let i = 0;
+    let j = 0;
+    while (i < left.length && j < right.length) {
+        if (left[i] < right[j]) {
+            result.push(left[i++]);
+        } else {
+            result.push(right[j++]);
+        }
+    }
+    return [...result, ...left.slice(i), ...right.slice(j)];
+}</pre>
+                    <p class="text-gray-600 mb-4">分治算法的典型复杂度。</p>
+                    <div class="loop-grid h-16 bg-gray-100 rounded-lg overflow-hidden" id="onlogn-example">
+                        <!-- 动态生成单元格 -->
+                    </div>
+                </div>
+
+                <!-- O(√n) 示例 -->
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <span class="bg-indigo-500/10 text-indigo-500 rounded-full w-8 h-8 flex items-center justify-center mr-2">O(√n)</span>
+                        平方根时间
+                    </h3>
+                    <pre class="bg-gray-50 p-4 rounded-lg text-sm mb-4 overflow-x-auto">
+function isPrime(n) {
+    if (n <= 1) return false;
+    for (let i = 2; i * i <= n; i++) {
+        if (n % i === 0) return false;
+    }
+    return true;
+}</pre>
+                    <p class="text-gray-600 mb-4">循环次数为输入规模的平方根。</p>
+                    <div class="loop-grid h-12 bg-gray-100 rounded-lg overflow-hidden" id="osqrtn-example">
+                        <!-- 动态生成单元格 -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 可视化工具部分 -->
+        <section id="visualizer" class="mb-16 bg-white rounded-xl shadow-xl p-6 md:p-10">
+            <h2 class="text-3xl font-bold text-dark mb-8 text-center">交互式时间复杂度可视化</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">选择示例代码</h3>
+                    <div class="mb-6">
+                        <select id="codeExample" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all">
+                            <option value="on">O(n) - 线性时间</option>
+                            <option value="on2">O(n²) - 平方时间</option>
+                            <option value="ologn">O(log n) - 对数时间</option>
+                            <option value="onlogn">O(n log n) - 线性对数时间</option>
+                            <option value="osqrtn">O(√n) - 平方根时间</option>
+                        </select>
+                    </div>
+                    
+                    <h3 class="text-xl font-bold mb-4">输入规模 (n)</h3>
+                    <div class="mb-6">
+                        <input type="range" id="inputSize" min="1" max="100" value="20" 
+                            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary">
+                        <div class="flex justify-between text-sm text-gray-500 mt-1">
+                            <span>1</span>
+                            <span id="sizeValue">20</span>
+                            <span>100</span>
+                        </div>
+                    </div>
+                    
+                    <button id="visualizeBtn" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center">
+                        <i class="fa fa-play-circle mr-2"></i> 可视化执行过程
+                    </button>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl font-bold mb-4">代码示例</h3>
+                    <div class="bg-gray-50 rounded-lg p-4 mb-6 overflow-x-auto" id="codeDisplay">
+                        <pre class="text-sm"><code>function sumArray(arr) {
+    let sum = 0;
+    for (let i = 0; i < arr.length; i++) {
+        sum += arr[i];
+    }
+    return sum;
+}</code></pre>
+                    </div>
+                    
+                    <h3 class="text-xl font-bold mb-4">执行可视化</h3>
+                    <div class="bg-gray-50 rounded-lg p-4 h-64 mb-6 overflow-auto" id="visualizationContainer">
+                        <div class="loop-grid h-full" id="visualizationGrid">
+                            <!-- 动态生成可视化 -->
+                        </div>
+                    </div>
+                    
+                    <div class="bg-primary/10 rounded-lg p-4">
+                        <h4 class="font-bold mb-2 text-primary">时间复杂度分析</h4>
+                        <p id="complexityResult" class="text-gray-700">
+                            该算法的时间复杂度为 <span class="font-bold text-primary">O(n)</span>，
+                            因为它包含一个循环，循环次数与输入规模 <span class="font-bold">n</span> 成正比。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 概念解释部分 -->
+        <section id="explanation" class="mb-16">
+            <h2 class="text-3xl font-bold text-dark mb-8 text-center">时间复杂度基础概念</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <h3 class="text-xl font-bold mb-4 text-primary">什么是时间复杂度？</h3>
+                    <p class="text-gray-600 mb-4">
+                        时间复杂度是衡量算法执行时间随输入规模增长而变化的指标。
+                        它描述的是算法执行时间的增长趋势，而不是具体的执行时间。
+                    </p>
+                    <div class="mb-4">
+                        <h4 class="font-bold mb-2">大O表示法</h4>
+                        <p class="text-gray-600">
+                            大O表示法是最常用的时间复杂度表示方法，它表示算法在最坏情况下的时间复杂度。
+                            例如，O(n) 表示算法的执行时间与输入规模 n 成线性关系。
+                        </p>
+                    </div>
+                    <div>
+                        <h4 class="font-bold mb-2">常见时间复杂度排序</h4>
+                        <p class="text-gray-600">
+                            O(1) < O(log n) < O(√n) < O(n) < O(n log n) < O(n²) < O(2ⁿ) < O(n!)
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <h3 class="text-xl font-bold mb-4 text-secondary">如何计算时间复杂度？</h3>
+                    <ol class="list-decimal list-inside text-gray-600 space-y-3">
+                        <li>
+                            <span class="font-bold">找出基本操作</span>：确定算法中的基本操作（如赋值、比较、算术运算等）。
+                        </li>
+                        <li>
+                            <span class="font-bold">分析循环结构</span>：计算每个循环执行的次数，通常与输入规模相关。
+                        </li>
+                        <li>
+                            <span class="font-bold">忽略常数因子</span>：时间复杂度关注的是增长趋势，因此忽略常数因子。
+                        </li>
+                        <li>
+                            <span class="font-bold">保留最高阶项</span>：当有多个项时，只保留增长最快的最高阶项。
+                        </li>
+                    </ol>
+                    
+                    <div class="mt-6 bg-gray-50 p-4 rounded-lg">
+                        <h4 class="font-bold mb-2">示例分析</h4>
+                        <pre class="text-sm mb-2"><code>for (i = 1; i * i <= n; i++) {
+    for (j = 1; j <= i; j++) {
+        // 基本操作
+    }
+}</code></pre>
+                        <p class="text-gray-600">
+                            外层循环执行约 √n 次，内层循环每次执行 i 次。总执行次数为 Σ(i=1 to √n) i ≈ n/2，
+                            因此时间复杂度为 O(n)。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 练习部分 -->
+        <section id="practice" class="mb-16 bg-white rounded-xl shadow-xl p-6 md:p-10">
+            <h2 class="text-3xl font-bold text-dark mb-8 text-center">测试你的理解</h2>
+            <div id="quiz-container" class="max-w-3xl mx-auto">
+                <div class="bg-gray-50 rounded-xl p-6 mb-8" id="quiz-question">
+                    <h3 class="text-xl font-bold mb-4">问题 1</h3>
+                    <p class="text-gray-700 mb-6">
+                        以下代码的时间复杂度是多少？
+                    </p>
+                    <pre class="bg-white p-4 rounded-lg text-sm mb-6 overflow-x-auto">
+for (i = 0; i < n; i *= 2) {
+    for (j = 0; j < n; j++) {
+        // 基本操作
+    }
+}</pre>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button class="quiz-option p-3 border border-gray-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-left">
+                            A. O(n)
+                        </button>
+                        <button class="quiz-option p-3 border border-gray-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-left">
+                            B. O(n log n)
+                        </button>
+                        <button class="quiz-option p-3 border border-gray-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-left">
+                            C. O(n²)
+                        </button>
+                        <button class="quiz-option p-3 border border-gray-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-left">
+                            D. O(n² log n)
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="hidden bg-green-50 rounded-xl p-6 mb-8" id="quiz-correct">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-green-100 text-green-500 rounded-full p-2 mr-3">
+                            <i class="fa fa-check"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-green-800">回答正确！</h3>
+                    </div>
+                    <p class="text-green-700">
+                        外层循环每次乘以2，因此执行次数为 log n。内层循环执行 n 次。
+                        总时间复杂度为 O(n log n)。
+                    </p>
+                </div>
+                
+                <div class="hidden bg-red-50 rounded-xl p-6 mb-8" id="quiz-incorrect">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-red-100 text-red-500 rounded-full p-2 mr-3">
+                            <i class="fa fa-times"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-red-800">回答错误</h3>
+                    </div>
+                    <p class="text-red-700 mb-2">
+                        正确答案是 B. O(n log n)
+                    </p>
+                    <p class="text-red-700">
+                        外层循环每次乘以2，因此执行次数为 log n。内层循环执行 n 次。
+                        总时间复杂度为 O(n log n)。
+                    </p>
+                </div>
+                
+                <div class="flex justify-between">
+                    <button id="prev-question" class="hidden bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg transition-all">
+                        <i class="fa fa-arrow-left mr-2"></i> 上一题
+                    </button>
+                    <button id="next-question" class="bg-primary hover:bg-primary/90 text-white font-bold py-2 px-4 rounded-lg transition-all">
+                        下一题 <i class="fa fa-arrow-right ml-2"></i>
+                    </button>
+                    <button id="check-answer" class="bg-primary hover:bg-primary/90 text-white font-bold py-2 px-4 rounded-lg transition-all">
+                        检查答案
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-dark text-white py-10">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">算法时间复杂度可视化工具</h3>
+                    <p class="text-gray-400">
+                        帮助学生和开发者直观理解算法时间复杂度的交互式学习工具。
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold mb-4">快速链接</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#examples" class="text-gray-400 hover:text-white transition-colors">复杂度示例</a></li>
+                        <li><a href="#visualizer" class="text-gray-400 hover:text-white transition-colors">可视化工具</a></li>
+                        <li><a href="#explanation" class="text-gray-400 hover:text-white transition-colors">概念解释</a></li>
+                        <li><a href="#practice" class="text-gray-400 hover:text-white transition-colors">练习题</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold mb-4">关注我们</h3>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors text-xl">
+                            <i class="fa fa-github"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors text-xl">
+                            <i class="fa fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors text-xl">
+                            <i class="fa fa-linkedin"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2025 算法时间复杂度可视化工具 | 版权所有</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 导航栏滚动效果
+        window.addEventListener('scroll', function() {
+            const header = document.getElementById('header');
+            if (window.scrollY > 50) {
+                header.classList.add('py-2');
+                header.classList.remove('py-4');
+                header.classList.add('shadow-lg');
+            } else {
+                header.classList.add('py-4');
+                header.classList.remove('py-2');
+                header.classList.remove('shadow-lg');
+            }
+        });
+
+        // 移动菜单切换
+        document.getElementById('menuBtn').addEventListener('click', function() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // 生成示例复杂度可视化
+        function generateExampleGrids() {
+            const n = 20;
+            
+            // O(n) 示例
+            const onExample = document.getElementById('on-example');
+            onExample.innerHTML = '';
+            for (let i = 0; i < n; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'loop-cell bg-secondary';
+                cell.style.animationDelay = `${i * 0.02}s`;
+                cell.classList.add('animate-fill');
+                onExample.appendChild(cell);
+            }
+            
+            // O(n²) 示例
+            const on2Example = document.getElementById('on2-example');
+            on2Example.innerHTML = '';
+            for (let i = 0; i < n; i++) {
+                for (let j = 0; j < n; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'loop-cell bg-accent';
+                    cell.style.animationDelay = `${(i * n + j) * 0.005}s`;
+                    cell.classList.add('animate-fill');
+                    on2Example.appendChild(cell);
+                }
+            }
+            
+            // O(log n) 示例
+            const olognExample = document.getElementById('ologn-example');
+            olognExample.innerHTML = '';
+            let i = 1;
+            let count = 0;
+            while (i < n) {
+                const cell = document.createElement('div');
+                cell.className = 'loop-cell bg-purple-500';
+                cell.style.animationDelay = `${count * 0.1}s`;
+                cell.classList.add('animate-fill');
+                olognExample.appendChild(cell);
+                i *= 2;
+                count++;
+            }
+            
+            // O(n log n) 示例
+            const onlognExample = document.getElementById('onlogn-example');
+            onlognExample.innerHTML = '';
+            let rows = Math.floor(Math.log2(n)) + 1;
+            for (let i = 0; i < rows; i++) {
+                let cols = Math.min(n, Math.pow(2, i));
+                for (let j = 0; j < cols; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'loop-cell bg-red-500';
+                    cell.style.animationDelay = `${(i * n + j) * 0.005}s`;
+                    cell.classList.add('animate-fill');
+                    onlognExample.appendChild(cell);
+                }
+            }
+            
+            // O(√n) 示例
+            const osqrtnExample = document.getElementById('osqrtn-example');
+            osqrtnExample.innerHTML = '';
+            let sqrtN = Math.floor(Math.sqrt(n));
+            for (let i = 0; i < sqrtN; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'loop-cell bg-indigo-500';
+                cell.style.animationDelay = `${i * 0.05}s`;
+                cell.classList.add('animate-fill');
+                osqrtnExample.appendChild(cell);
+            }
+        }
+        
+        // 初始化示例可视化
+        generateExampleGrids();
+
+        // 可视化工具功能
+        const codeExamples = {
+            'on': {
+                code: `function sumArray(arr) {
+    let sum = 0;
+    for (let i = 0; i < arr.length; i++) {
+        sum += arr[i];
+    }
+    return sum;
+}`,
+                complexity: 'O(n)',
+                complexityText: '该算法的时间复杂度为 <span class="font-bold text-primary">O(n)</span>，因为它包含一个循环，循环次数与输入规模 <span class="font-bold">n</span> 成正比。',
+                generateVisualization: function(n) {
+                    const grid = document.getElementById('visualizationGrid');
+                    grid.innerHTML = '';
+                    grid.style.gridTemplateColumns = `repeat(${n}, minmax(20px, 1fr))`;
+                    
+                    for (let i = 0; i < n; i++) {
+                        setTimeout(() => {
+                            const cell = document.createElement('div');
+                            cell.className = 'loop-cell bg-primary';
+                            cell.classList.add('animate-fill');
+                            grid.appendChild(cell);
+                        }, i * 50);
+                    }
+                }
+            },
+            'on2': {
+                code: `function bubbleSort(arr) {
+    const n = arr.length;
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n - i - 1; j++) {
+            if (arr[j] > arr[j + 1]) {
+                [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+            }
+        }
+    }
+    return arr;
+}`,
+                complexity: 'O(n²)',
+                complexityText: '该算法的时间复杂度为 <span class="font-bold text-accent">O(n²)</span>，因为它包含两层嵌套循环，总执行次数与输入规模 <span class="font-bold">n</span> 的平方成正比。',
+                generateVisualization: function(n) {
+                    const grid = document.getElementById('visualizationGrid');
+                    grid.innerHTML = '';
+                    grid.style.gridTemplateColumns = `repeat(${n}, minmax(20px, 1fr))`;
+                    
+                    let count = 0;
+                    for (let i = 0; i < n; i++) {
+                        for (let j = 0; j < n - i; j++) {
+                            setTimeout(() => {
+                                const cell = document.createElement('div');
+                                cell.className = 'loop-cell bg-accent';
+                                cell.classList.add('animate-fill');
+                                grid.appendChild(cell);
+                            }, count * 20);
+                            count++;
+                        }
+                    }
+                }
+            },
+            'ologn': {
+                code: `function binarySearch(arr, target) {
+    let left = 0;
+    let right = arr.length - 1;
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        if (arr[mid] === target) return mid;
+        if (arr[mid] < target) left = mid + 1;
+        else right = mid - 1;
+    }
+    return -1;
+}`,
+                complexity: 'O(log n)',
+                complexityText: '该算法的时间复杂度为 <span class="font-bold text-purple-500">O(log n)</span>，因为每次循环都将问题规模减半，循环次数与输入规模 <span class="font-bold">n</span> 的对数成正比。',
+                generateVisualization: function(n) {
+                    const grid = document.getElementById('visualizationGrid');
+                    grid.innerHTML = '';
+                    grid.style.gridTemplateColumns = `repeat(${n}, minmax(20px, 1fr))`;
+                    
+                    let currentN = n;
+                    let level = 0;
+                    let indices = [];
+                    
+                    while (currentN > 0) {
+                        let mid = Math.floor(currentN / 2);
+                        indices.push(mid + (indices.length > 0 ? indices[indices.length - 1] : 0));
+                        currentN = Math.floor(currentN / 2);
+                        level++;
+                    }
+                    
+                    indices.forEach((index, i) => {
+                        setTimeout(() => {
+                            const cells = grid.querySelectorAll('.loop-cell');
+                            cells.forEach(cell => {
+                                cell.classList.remove('bg-purple-500');
+                                cell.classList.add('bg-gray-300');
+                            });
+                            
+                            const cell = document.createElement('div');
+                            cell.className = 'loop-cell bg-purple-500';
+                            cell.classList.add('animate-fill');
+                            grid.appendChild(cell);
+                            
+                            // 填充前面的灰色单元格
+                            for (let j = 0; j < index; j++) {
+                                if (!grid.children[j]) {
+                                    const grayCell = document.createElement('div');
+                                    grayCell.className = 'loop-cell bg-gray-300';
+                                    grid.appendChild(grayCell);
+                                }
+                            }
+                            
+                            // 如果单元格数量超过n，移除多余的
+                            while (grid.children.length > n) {
+                                grid.removeChild(grid.lastChild);
+                            }
+                        }, i * 300);
+                    });
+                }
+            },
+            'onlogn': {
+                code: `function mergeSort(arr) {
+    if (arr.length <= 1) return arr;
+    const mid = Math.floor(arr.length / 2);
+    const left = mergeSort(arr.slice(0, mid));
+    const right = mergeSort(arr.slice(mid));
+    return merge(left, right);
+}
+
+function merge(left, right) {
+    const result = [];
+    let i = 0;
+    let j = 0;
+    while (i < left.length && j < right.length) {
+        if (left[i] < right[j]) {
+            result.push(left[i++]);
+        } else {
+            result.push(right[j++]);
+        }
+    }
+    return [...result, ...left.slice(i), ...right.slice(j)];
+}`,
+                complexity: 'O(n log n)',
+                complexityText: '该算法的时间复杂度为 <span class="font-bold text-red-500">O(n log n)</span>，因为它采用分治策略，每层递归处理所有 <span class="font-bold">n</span> 个元素，递归深度为 <span class="font-bold">log n</span>。',
+                generateVisualization: function(n) {
+                    const grid = document.getElementById('visualizationGrid');
+                    grid.innerHTML = '';
+                    grid.style.gridTemplateColumns = `repeat(${n}, minmax(20px, 1fr))`;
+                    
+                    const levels = Math.floor(Math.log2(n)) + 1;
+                    let currentLevel = 0;
+                    
+                    function processLevel(level, start, end) {
+                        if (level > levels) return;
+                        
+                        const mid = Math.floor((start + end) / 2);
+                        const width = end - start + 1;
+                        
+                        // 绘制当前层级的元素
+                        setTimeout(() => {
+                            for (let i = start; i <= end; i++) {
+                                setTimeout(() => {
+                                    const cell = document.createElement('div');
+                                    cell.className = `loop-cell bg-red-500/` + (levels - level + 1) * 10;
+                                    cell.classList.add('animate-fill');
+                                    
+                                    // 如果单元格已存在，则更新它
+                                    if (grid.children[i]) {
+                                        grid.replaceChild(cell, grid.children[i]);
+                                    } else {
+                                        // 填充前面的单元格
+                                        while (grid.children.length < i) {
+                                            const emptyCell = document.createElement('div');
+                                            emptyCell.className = 'loop-cell bg-gray-100';
+                                            grid.appendChild(emptyCell);
+                                        }
+                                        grid.appendChild(cell);
+                                    }
+                                }, (i - start) * 30);
+                            }
+                            
+                            // 递归处理子层级
+                            if (width > 1) {
+                                processLevel(level + 1, start, mid);
+                                processLevel(level + 1, mid + 1, end);
+                            }
+                        }, level * 500);
+                    }
+                    
+                    processLevel(1, 0, n - 1);
+                }
+            },
+            'osqrtn': {
+                code: `function isPrime(n) {
+    if (n <= 1) return false;
+    for (let i = 2; i * i <= n; i++) {
+        if (n % i === 0) return false;
+    }
+    return true;
+}`,
+                complexity: 'O(√n)',
+                complexityText: '该算法的时间复杂度为 <span class="font-bold text-indigo-500">O(√n)</span>，因为循环执行次数为输入规模 <span class="font-bold">n</span> 的平方根。',
+                generateVisualization: function(n) {
+                    const grid = document.getElementById('visualizationGrid');
+                    grid.innerHTML = '';
+                    grid.style.gridTemplateColumns = `repeat(${n}, minmax(20px, 1fr))`;
+                    
+                    const sqrtN = Math.floor(Math.sqrt(n));
+                    
+                    for (let i = 0; i < sqrtN; i++) {
+                        setTimeout(() => {
+                            const cell = document.createElement('div');
+                            cell.className = 'loop-cell bg-indigo-500';
+                            cell.classList.add('animate-fill');
+                            grid.appendChild(cell);
+                            
+                            // 填充后面的灰色单元格来表示规模n
+                            while (grid.children.length < n) {
+                                const grayCell = document.createElement('div');
+                                grayCell.className = 'loop-cell bg-gray-100';
+                                grid.appendChild(grayCell);
+                            }
+                        }, i * 100);
+                    }
+                }
+            }
+        };
+
+        // 更新可视化工具
+        const inputSize = document.getElementById('inputSize');
+        const sizeValue = document.getElementById('sizeValue');
+        const codeDisplay = document.getElementById('codeDisplay');
+        const codeExample = document.getElementById('codeExample');
+        const complexityResult = document.getElementById('complexityResult');
+        const visualizeBtn = document.getElementById('visualizeBtn');
+        const visualizationGrid = document.getElementById('visualizationGrid');
+        
+        inputSize.addEventListener('input', function() {
+            sizeValue.textContent = this.value;
+        });
+        
+        codeExample.addEventListener('change', function() {
+            const selectedExample = codeExamples[this.value];
+            codeDisplay.innerHTML = `<pre class="text-sm"><code>${selectedExample.code}</code></pre>`;
+            complexityResult.innerHTML = selectedExample.complexityText;
+        });
+        
+        visualizeBtn.addEventListener('click', function() {
+            const n = parseInt(inputSize.value);
+            const selectedExample = codeExamples[codeExample.value];
+            
+            visualizationGrid.innerHTML = '';
+            selectedExample.generateVisualization(n);
+        });
+
+        // 初始化可视化工具
+        function initVisualizer() {
+            const selectedExample = codeExamples[codeExample.value];
+            codeDisplay.innerHTML = `<pre class="text-sm"><code>${selectedExample.code}</code></pre>`;
+            complexityResult.innerHTML = selectedExample.complexityText;
+        }
+        
+        initVisualizer();
+
+        // 练习部分
+        const quizOptions = document.querySelectorAll('.quiz-option');
+        const checkAnswerBtn = document.getElementById('check-answer');
+        const nextQuestionBtn = document.getElementById('next-question');
+        const prevQuestionBtn = document.getElementById('prev-question');
+        const quizCorrect = document.getElementById('quiz-correct');
+        const quizIncorrect = document.getElementById('quiz-incorrect');
+        const quizQuestion = document.getElementById('quiz-question');
+        
+        let selectedOption = null;
+        let currentQuestion = 1;
+        let totalQuestions = 5;
+        
+        quizOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                quizOptions.forEach(opt => opt.classList.remove('border-primary', 'bg-primary/5'));
+                this.classList.add('border-primary', 'bg-primary/5');
+                selectedOption = this;
+            });
+        });
+        
+        checkAnswerBtn.addEventListener('click', function() {
+            if (!selectedOption) return;
+            
+            // 简单模拟，实际应用中应该有真实的答案验证逻辑
+            if (selectedOption.textContent.includes('B')) {
+                quizCorrect.classList.remove('hidden');
+                quizIncorrect.classList.add('hidden');
+            } else {
+                quizCorrect.classList.add('hidden');
+                quizIncorrect.classList.remove('hidden');
+            }
+            
+            checkAnswerBtn.classList.add('hidden');
+            nextQuestionBtn.classList.remove('hidden');
+        });
+        
+        nextQuestionBtn.addEventListener('click', function() {
+            if (currentQuestion < totalQuestions) {
+                currentQuestion++;
+                // 重置UI状态
+                quizOptions.forEach(opt => opt.classList.remove('border-primary', 'bg-primary/5'));
+                quizCorrect.classList.add('hidden');
+                quizIncorrect.classList.add('hidden');
+                checkAnswerBtn.classList.remove('hidden');
+                nextQuestionBtn.classList.add('hidden');
+                selectedOption = null;
+                
+                // 更新问题显示（实际应用中应该加载新问题）
+                document.querySelector('#quiz-question h3').textContent = `问题 ${currentQuestion}`;
+                
+                if (currentQuestion > 1) {
+                    prevQuestionBtn.classList.remove('hidden');
+                }
+            }
+        });
+        
+        prevQuestionBtn.addEventListener('click', function() {
+            if (currentQuestion > 1) {
+                currentQuestion--;
+                // 重置UI状态
+                quizOptions.forEach(opt => opt.classList.remove('border-primary', 'bg-primary/5'));
+                quizCorrect.classList.add('hidden');
+                quizIncorrect.classList.add('hidden');
+                checkAnswerBtn.classList.remove('hidden');
+                nextQuestionBtn.classList.add('hidden');
+                selectedOption = null;
+                
+                // 更新问题显示（实际应用中应该加载新问题）
+                document.querySelector('#quiz-question h3').textContent = `问题 ${currentQuestion}`;
+                
+                if (currentQuestion === 1) {
+                    prevQuestionBtn.classList.add('hidden');
+                }
+            }
+        });
+
+        // 平滑滚动
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                    
+                    // 关闭移动菜单
+                    document.getElementById('mobileMenu').classList.add('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+    
