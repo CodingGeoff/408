@@ -1,0 +1,137 @@
+<div class="solution">
+    <h3>问题描述</h3>
+    <p>某计算机 CPU 主频为 500MHz，CPI 为 5。外设数据传输速率为 0.5MB/s，采用中断方式，每次传输 32 位数据。中断服务程序包含 18 条指令，其他开销相当于 2 条指令时间。当外设速率提升至 5MB/s
+        时改用 DMA 方式，每次传送块大小为 5000B，DMA 预处理和后处理总开销为 500 个时钟周期。</p>
+
+    <h4>问题 1：中断方式下 CPU 时间占用百分比</h4>
+    <h5>计算步骤：</h5>
+    <ol>
+        <li><strong>单次中断的 CPU 时间</strong>：
+            <ul>
+                <li>每条指令时间 = CPI / 主频 = 5 / (500×10⁶) = 1×10⁻⁸ 秒</li>
+                <li>中断总指令数 = 18（服务程序） + 2（其他开销） = 20 条</li>
+                <li>单次中断时间 = 20 × 1×10⁻⁸ = 2×10⁻⁷ 秒</li>
+            </ul>
+        </li>
+        <li><strong>每秒中断次数</strong>：
+            <ul>
+                <li>每次传输数据量 = 32 位 = 4 字节</li>
+                <li>中断次数 = 数据传输速率 / 每次传输量 = 0.5×10⁶ / 4 = 125,000 次/秒</li>
+            </ul>
+        </li>
+        <li><strong>总 CPU 时间占用</strong>：
+            <ul>
+                <li>总时间 = 125,000 × 2×10⁻⁷ = 0.025 秒/秒</li>
+                <li>百分比 = 0.025 / 1 × 100% = <strong>2.5%</strong></li>
+            </ul>
+        </li>
+    </ol>
+
+    <h4>问题 2：DMA 方式下 CPU 时间占用百分比</h4>
+    <h5>计算步骤：</h5>
+    <ol>
+        <li><strong>单次 DMA 开销时间</strong>：
+            <ul>
+                <li>时钟周期时间 = 1 / 主频 = 1 / (500×10⁶) = 2×10⁻⁹ 秒</li>
+                <li>总周期数 = 500 个</li>
+                <li>单次 DMA 时间 = 500 × 2×10⁻⁹ = 1×10⁻⁶ 秒</li>
+            </ul>
+        </li>
+        <li><strong>每秒 DMA 次数</strong>：
+            <ul>
+                <li>每次传输数据量 = 5000 字节</li>
+                <li>DMA 次数 = 数据传输速率 / 每次传输量 = 5×10⁶ / 5000 = 1000 次/秒</li>
+            </ul>
+        </li>
+        <li><strong>总 CPU 时间占用</strong>：
+            <ul>
+                <li>总时间 = 1000 × 1×10⁻⁶ = 0.001 秒/秒</li>
+                <li>百分比 = 0.001 / 1 × 100% = <strong>0.1%</strong></li>
+            </ul>
+        </li>
+    </ol>
+
+    <h3>答案总结</h3>
+    <table>
+        <tr>
+            <th>问题</th>
+            <th>计算过程</th>
+            <th>结果</th>
+        </tr>
+        <tr>
+            <td>中断方式</td>
+            <td>单次中断时间 × 中断次数 / 总时间</td>
+            <td>2.5%</td>
+        </tr>
+        <tr>
+            <td>DMA 方式</td>
+            <td>单次 DMA 开销 × DMA 次数 / 总时间</td>
+            <td>0.1%</td>
+        </tr>
+    </table>
+</div>
+
+<style>
+    .solution {
+        font-family: "Segoe UI", Arial, sans-serif;
+        line-height: 1.6;
+        margin: 20px;
+        padding: 25px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .solution h3 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 8px;
+        margin-top: 20px;
+    }
+
+    .solution h4 {
+        color: #34495e;
+        margin: 15px 0 10px 0;
+    }
+
+    .solution h5 {
+        color: #7f8c8d;
+        margin: 10px 0;
+    }
+
+    .solution ol,
+    .solution ul {
+        margin: 10px 0 10px 20px;
+    }
+
+    .solution li {
+        margin: 8px 0;
+    }
+
+    .solution table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+        background: white;
+    }
+
+    .solution th,
+    .solution td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: left;
+    }
+
+    .solution th {
+        background-color: #3498db;
+        color: white;
+    }
+
+    .solution td {
+        background-color: #f9f9f9;
+    }
+
+    .solution strong {
+        color: #e74c3c;
+    }
+</style>

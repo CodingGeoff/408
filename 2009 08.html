@@ -1,0 +1,157 @@
+<!-- <div class="solution">
+    <h3>问题分析</h3>
+    <p>题目中的方法试图通过逐步选择当前顶点的最近邻接点来构造最短路径。然而，这种方法存在缺陷，因为它仅基于局部最优选择（当前顶点最近的邻接点），而忽略了全局路径的累积权重。以下通过反例说明该方法可能失败的情况。</p>
+
+    <h3>反例说明</h3>
+    <p>考虑以下带权图：</p>
+    <pre>
+        A ——1→ B ——100→ D
+        │
+        └2→ C ——3→ D
+    </pre>
+    <p>其中顶点为 A（起点）、B、C、D（终点），边的权值如箭头所示。</p>
+
+    <h4>正确的最短路径</h4>
+    <p>A → C → D，总权重为 2 + 3 = 5。</p>
+
+    <h4>题目方法的执行过程</h4>
+    <ol>
+        <li>初始顶点为 A，最短路径为 [A]。</li>
+        <li>选择 A 的最近邻接点 B（权重 1），加入路径，当前顶点变为 B。</li>
+        <li>在 B 处，选择其唯一未访问邻接点 D（权重 100），加入路径。最终路径为 A → B → D，总权重为 1 + 100 = 101。</li>
+    </ol>
+
+    <h3>结论</h3>
+    <p>该方法未能找到实际最短路径 A → C → D（权重 5），反而选择了更长的路径 A → B → D（权重 101）。因此，<strong>该方法不可行</strong>。</p>
+
+    <h3>失败原因</h3>
+    <p>题目方法仅依赖当前顶点的局部信息，未考虑从起点到后续顶点的全局累计权重。相比之下，Dijkstra 算法通过维护起点到所有顶点的最短距离，并动态更新这些值，确保了全局最优性。</p>
+</div>
+
+<style>
+    .solution {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        margin: 20px;
+        padding: 20px;
+        background-color: #f5f5f5;
+        border-radius: 8px;
+    }
+
+    .solution h3 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 5px;
+    }
+
+    .solution pre {
+        background-color: #e0e0e0;
+        padding: 10px;
+        border-radius: 5px;
+        overflow-x: auto;
+    }
+
+    .solution ol {
+        margin-left: 20px;
+    }
+</style> -->
+
+
+<div class="solution">
+    <h3>问题描述</h3>
+    <p>给定一个带权图（权值非负），判断以下方法能否正确找到初始顶点到目标顶点的最短路径：</p>
+    <ol>
+        <li>初始路径仅包含起点，当前顶点设为起点。</li>
+        <li>每次选择当前顶点的最近未访问邻接点加入路径，并更新当前顶点。</li>
+        <li>重复直至到达目标顶点。</li>
+    </ol>
+
+    <h3>答案分析</h3>
+    <p><strong>该方法不可行</strong>。以下是详细分析：</p>
+
+    <h4>反例验证</h4>
+    <p>构造如下带权图（A为起点，D为终点）：</p>
+    <pre>
+        A ——1→ B ——100→ D
+        │
+        └2→ C ——3→ D
+    </pre>
+
+    <h5>题目方法的执行过程：</h5>
+    <ol>
+        <li>起点为A，路径为[A]。</li>
+        <li>选择A的最近邻接点B（权重1），路径变为[A, B]。</li>
+        <li>从B选择唯一邻接点D（权重100），路径变为[A, B, D]，总权重=1+100=101。</li>
+    </ol>
+
+    <h5>实际最短路径：</h5>
+    <p>A → C → D，总权重=2+3=5。</p>
+
+    <h4>失败原因</h4>
+    <p>该方法仅关注当前顶点的局部最优选择（最近邻接点），而忽略了全局路径的累积权重。例如：</p>
+    <ul>
+        <li>虽然B是A的最近邻接点，但从B到D的路径权重极大。</li>
+        <li>C虽然距离A稍远，但后续路径更优。</li>
+    </ul>
+
+    <h4>对比Dijkstra算法</h4>
+    <p>Dijkstra算法能保证正确性的核心在于：</p>
+    <ul>
+        <li>维护从起点到所有顶点的最短距离。</li>
+        <li>每次选择<strong>全局最短距离的未访问顶点</strong>，而非局部邻接点。</li>
+    </ul>
+    <p>在反例中，Dijkstra算法会优先更新C的最短距离为2，最终通过C到达D，确保全局最优。</p>
+
+    <h3>结论</h3>
+    <p>题目中的方法因局部贪心选择导致全局失效，无法保证找到最短路径。</p>
+</div>
+
+<style>
+    .solution {
+        font-family: "Segoe UI", Arial, sans-serif;
+        line-height: 1.6;
+        margin: 20px;
+        padding: 25px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .solution h3 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 8px;
+        margin-top: 20px;
+    }
+
+    .solution h4 {
+        color: #34495e;
+        margin: 15px 0 10px 0;
+    }
+
+    .solution h5 {
+        color: #7f8c8d;
+        margin: 10px 0;
+    }
+
+    .solution pre {
+        background: #e9ecef;
+        padding: 12px;
+        border-radius: 6px;
+        overflow-x: auto;
+        margin: 10px 0;
+    }
+
+    .solution ol,
+    .solution ul {
+        margin: 10px 0 10px 20px;
+    }
+
+    .solution li {
+        margin: 8px 0;
+    }
+
+    .solution strong {
+        color: #e74c3c;
+    }
+</style>

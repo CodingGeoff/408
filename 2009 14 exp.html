@@ -1,0 +1,146 @@
+<div class="solution">
+    <h3>问题解析与图解</h3>
+    <p>以下通过分步图解和LRU置换过程，详细说明虚拟地址的转换与时间计算。</p>
+
+    <h4>1. 地址拆分与初始状态</h4>
+    <div class="diagram">
+        <img src="https://via.placeholder.com/600x200.png?text=地址拆分示意图" alt="地址拆分">
+        <p><strong>虚拟地址结构：</strong><br>
+            页面大小4KB（0x1000），页内偏移量为低12位。<br>
+            示例：<br>
+            2362H → 页号2，偏移362H<br>
+            1565H → 页号1，偏移565H<br>
+            25A5H → 页号2，偏移5A5H</p>
+    </div>
+
+    <h4>2. 内存初始状态与LRU队列</h4>
+    <div class="diagram">
+        <img src="https://via.placeholder.com/600x200.png?text=初始驻留集+LRU队列" alt="初始状态">
+        <p><strong>初始驻留集：</strong><br>
+            页0（页框101H）和页2（页框254H）在内存中，LRU队列为 [页0, 页2]。<br>
+            TLB初始为空。</p>
+    </div>
+
+    <h4>3. 访问2362H（页号2）</h4>
+    <div class="diagram">
+        <p><strong>过程：</strong><br>
+            1. TLB未命中 → 访问页表（100ns）→ 页2有效，页框254H。<br>
+            2. 访问内存数据（100ns）。<br>
+            3. 更新LRU队列为 [页0, 页2 → 页2, 页0]。<br>
+            <strong>总时间：10ns + 100ns + 100ns = 210ns</strong>
+        </p>
+    </div>
+
+    <h4>4. 访问1565H（页号1）</h4>
+    <div class="diagram">
+        <p><strong>过程：</strong><br>
+            1. TLB未命中 → 访问页表（100ns）→ 页1无效，触发缺页。<br>
+            2. LRU队列中页0最久未使用，替换页0 → 页1装入页框101H。<br>
+            3. 缺页处理耗时1e8 ns，更新页表：页1有效，页0无效。<br>
+            4. 重新执行指令：TLB未命中 → 访问页表（100ns）→ 访问内存（100ns）。<br>
+            <strong>总时间：10ns + 100ns + 1e8ns + 10ns + 100ns = 100,000,220ns</strong>
+        </p>
+    </div>
+
+    <h4>5. 访问25A5H（页号2）</h4>
+    <div class="diagram">
+        <p><strong>过程：</strong><br>
+            1. TLB命中页2 → 直接访问内存（100ns）。<br>
+            2. LRU队列更新为 [页1, 页2 → 页2, 页1]。<br>
+            <strong>总时间：10ns + 100ns = 110ns</strong>
+        </p>
+    </div>
+
+    <h4>6. 虚地址1565H的物理地址计算</h4>
+    <div class="diagram">
+        <p><strong>计算过程：</strong><br>
+            页框号101H（替换后） × 4KB（0x1000） + 偏移565H = 101000H + 565H = <strong>101565H</strong></p>
+    </div>
+
+    <h3>答案总结</h3>
+    <table>
+        <tr>
+            <th>虚拟地址</th>
+            <th>访问时间</th>
+            <th>物理地址（问题2）</th>
+        </tr>
+        <tr>
+            <td>2362H</td>
+            <td>210ns</td>
+            <td rowspan="3">1565H → 101565H</td>
+        </tr>
+        <tr>
+            <td>1565H</td>
+            <td>100,000,220ns</td>
+        </tr>
+        <tr>
+            <td>25A5H</td>
+            <td>110ns</td>
+        </tr>
+    </table>
+</div>
+
+<style>
+    .solution {
+        font-family: "Segoe UI", Arial, sans-serif;
+        line-height: 1.6;
+        margin: 20px;
+        padding: 25px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .solution h3 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 8px;
+        margin-top: 20px;
+    }
+
+    .diagram {
+        margin: 20px 0;
+        padding: 15px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .diagram img {
+        width: 100%;
+        border-radius: 6px;
+        margin-bottom: 10px;
+    }
+
+    .diagram p {
+        margin: 10px 0;
+        color: #34495e;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+        background: white;
+    }
+
+    th,
+    td {
+        border: 1px solid #ddd;
+        padding: 12px;
+        text-align: left;
+    }
+
+    th {
+        background-color: #3498db;
+        color: white;
+    }
+
+    td {
+        background-color: #f9f9f9;
+    }
+
+    strong {
+        color: #e74c3c;
+    }
+</style>

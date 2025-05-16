@@ -1,0 +1,137 @@
+<div class="solution">
+    <h3>问题描述</h3>
+    <p>请求分页管理系统中，某进程的页表如下：</p>
+    <table>
+        <tr>
+            <th>页号</th>
+            <th>页框号</th>
+            <th>有效位</th>
+        </tr>
+        <tr>
+            <td>0</td>
+            <td>101H</td>
+            <td>1</td>
+        </tr>
+        <tr>
+            <td>1</td>
+            <td>—</td>
+            <td>0</td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td>254H</td>
+            <td>1</td>
+        </tr>
+    </table>
+    <p>页面大小为4KB，内存访问时间100ns，TLB访问时间10ns，缺页处理时间10<sup>8</sup>ns，驻留集大小固定为2，采用LRU置换算法。虚拟地址序列为2362H, 1565H, 25A5H。</p>
+
+    <h3>问题1：访问时间计算</h3>
+    <h4>虚拟地址2362H</h4>
+    <ol>
+        <li>页号：2（有效位1，页框号254H）</li>
+        <li>TLB未命中（初始为空）→ 访问页表（100ns）→ 访问内存（100ns）</li>
+        <li>总时间：10ns（TLB） + 100ns（页表） + 100ns（内存） = <strong>210ns</strong></li>
+    </ol>
+
+    <h4>虚拟地址1565H</h4>
+    <ol>
+        <li>页号：1（有效位0，触发缺页）</li>
+        <li>缺页处理时间：10<sup>8</sup>ns</li>
+        <li>LRU替换页号0，页号1装入页框101H</li>
+        <li>重新执行后，TLB命中 → 访问内存（100ns）</li>
+        <li>总时间：10ns（TLB未命中） + 100ns（页表） + 10<sup>8</sup>ns（缺页） + 10ns（TLB命中） + 100ns（内存） =
+            <strong>100,000,220ns</strong></li>
+    </ol>
+
+    <h4>虚拟地址25A5H</h4>
+    <ol>
+        <li>页号：2（有效位1，页框号254H）</li>
+        <li>TLB命中（此前已缓存）→ 直接访问内存</li>
+        <li>总时间：10ns（TLB） + 100ns（内存） = <strong>110ns</strong></li>
+    </ol>
+
+    <h3>问题2：虚地址1565H的物理地址</h3>
+    <ol>
+        <li>页号：1，页内偏移：565H</li>
+        <li>缺页处理后，页号1的页框号为101H</li>
+        <li>物理地址 = 页框基址（101H × 4KB） + 偏移量（565H）</li>
+        <li>计算：101H × 1000H = 101000H → 101000H + 565H = <strong>101565H</strong></li>
+    </ol>
+
+    <h3>答案总结</h3>
+    <table>
+        <tr>
+            <th>虚拟地址</th>
+            <th>访问时间</th>
+            <th>物理地址（问题2）</th>
+        </tr>
+        <tr>
+            <td>2362H</td>
+            <td>210ns</td>
+            <td rowspan="3">1565H → 101565H</td>
+        </tr>
+        <tr>
+            <td>1565H</td>
+            <td>100,000,220ns</td>
+        </tr>
+        <tr>
+            <td>25A5H</td>
+            <td>110ns</td>
+        </tr>
+    </table>
+</div>
+
+<style>
+    .solution {
+        font-family: "Segoe UI", Arial, sans-serif;
+        line-height: 1.6;
+        margin: 20px;
+        padding: 25px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .solution h3 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 8px;
+        margin-top: 20px;
+    }
+
+    .solution table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+        background: white;
+    }
+
+    .solution th,
+    .solution td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: left;
+    }
+
+    .solution th {
+        background-color: #3498db;
+        color: white;
+    }
+
+    .solution td {
+        background-color: #f9f9f9;
+    }
+
+    .solution ol {
+        margin: 10px 0 10px 20px;
+    }
+
+    .solution li {
+        margin: 8px 0;
+    }
+
+    .solution sup {
+        font-size: 0.8em;
+        vertical-align: super;
+    }
+</style>

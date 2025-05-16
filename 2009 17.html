@@ -1,0 +1,168 @@
+<div class="solution">
+    <h3>问题描述</h3>
+    <p>三个进程 <code>P1</code>, <code>P2</code>, <code>P3</code> 互斥使用包含 <code>N</code> 个单元的缓冲区。要求用信号量机制实现以下同步与互斥：</p>
+    <ul>
+        <li><code>P1</code> 生成正整数并存入缓冲区。</li>
+        <li><code>P2</code> 取出奇数并统计个数。</li>
+        <li><code>P3</code> 取出偶数并统计个数。</li>
+    </ul>
+
+    <h3>信号量定义</h3>
+    <table>
+        <tr>
+            <th>信号量</th>
+            <th>含义</th>
+            <th>初始值</th>
+        </tr>
+        <tr>
+            <td><code>mutex</code></td>
+            <td>互斥访问缓冲区</td>
+            <td>1</td>
+        </tr>
+        <tr>
+            <td><code>empty</code></td>
+            <td>缓冲区空槽数量</td>
+            <td>N</td>
+        </tr>
+        <tr>
+            <td><code>odd</code></td>
+            <td>缓冲区中奇数数量</td>
+            <td>0</td>
+        </tr>
+        <tr>
+            <td><code>even</code></td>
+            <td>缓冲区中偶数数量</td>
+            <td>0</td>
+        </tr>
+    </table>
+
+    <h3>伪代码实现</h3>
+    <pre>
+// 定义信号量
+semaphore mutex = 1;  // 互斥锁
+semaphore empty = N;  // 空槽数量
+semaphore odd = 0;    // 奇数数量
+semaphore even = 0;   // 偶数数量
+
+// 进程 P1
+process P1:
+    while (true) {
+        int num = produce();       // 生成正整数
+        wait(empty);               // 等待空槽
+        wait(mutex);               // 申请互斥访问缓冲区
+        put(num);                  // 将 num 放入缓冲区
+        signal(mutex);             // 释放互斥访问缓冲区
+        if (num % 2 == 1) {
+            signal(odd);          // 通知奇数可用
+        } else {
+            signal(even);         // 通知偶数可用
+        }
+    }
+
+// 进程 P2
+process P2:
+    while (true) {
+        wait(odd);                 // 等待奇数可用
+        wait(mutex);               // 申请互斥访问缓冲区
+        int num = getodd();         // 取出奇数
+        signal(mutex);             // 释放互斥访问缓冲区
+        signal(empty);             // 释放一个空槽
+        countedd();                // 统计奇数
+    }
+
+// 进程 P3
+process P3:
+    while (true) {
+        wait(even);                // 等待偶数可用
+        wait(mutex);               // 申请互斥访问缓冲区
+        int num = geteven();       // 取出偶数
+        signal(mutex);             // 释放互斥访问缓冲区
+        signal(empty);             // 释放一个空槽
+        counterven();              // 统计偶数
+    }
+    </pre>
+
+    <h3>关键说明</h3>
+    <ol>
+        <li><strong>互斥访问</strong>：通过 <code>mutex</code> 确保缓冲区的原子操作。</li>
+        <li><strong>同步机制</strong>：
+            <ul>
+                <li><code>empty</code> 控制缓冲区容量，防止溢出。</li>
+                <li><code>odd</code> 和 <code>even</code> 确保消费者仅在有对应奇偶数时操作。</li>
+            </ul>
+        </li>
+        <li><strong>操作顺序</strong>：
+            <ul>
+                <li><code>P1</code> 先申请空槽，再申请互斥锁，避免死锁。</li>
+                <li><code>P2</code>/<code>P3</code> 先等待奇偶信号量，再申请互斥锁，减少无效锁竞争。</li>
+            </ul>
+        </li>
+    </ol>
+</div>
+
+<style>
+    .solution {
+        font-family: "Segoe UI", Arial, sans-serif;
+        line-height: 1.6;
+        margin: 20px;
+        padding: 25px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .solution h3 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 8px;
+        margin-top: 20px;
+    }
+
+    .solution table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+        background: white;
+    }
+
+    .solution th,
+    .solution td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: left;
+    }
+
+    .solution th {
+        background-color: #3498db;
+        color: white;
+    }
+
+    .solution td {
+        background-color: #f9f9f9;
+    }
+
+    .solution pre {
+        background: #e9ecef;
+        padding: 12px;
+        border-radius: 6px;
+        overflow-x: auto;
+        margin: 10px 0;
+    }
+
+    .solution code {
+        font-family: "Consolas", monospace;
+        color: #c7254e;
+        background: #f9f2f4;
+        padding: 2px 4px;
+        border-radius: 3px;
+    }
+
+    .solution ol,
+    .solution ul {
+        margin: 10px 0 10px 20px;
+    }
+
+    .solution li {
+        margin: 8px 0;
+    }
+</style>
