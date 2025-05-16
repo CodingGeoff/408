@@ -58,6 +58,91 @@
         <li>计算：101H × 1000H = 101000H → 101000H + 565H = <strong>101565H</strong></li>
     </ol>
 
+    <h3>LRU算法过程图解</h3>
+    <div class="lru-visualization">
+        <!-- 初始状态 -->
+        <div class="step">
+            <h4>初始状态</h4>
+            <svg width="400" height="150" viewBox="0 0 400 150">
+                <rect x="50" y="20" width="300" height="60" fill="#f0f0f0" stroke="#666" />
+                <text x="200" y="45" text-anchor="middle" font-weight="bold">驻留集</text>
+                <rect x="70" y="50" width="120" height="25" fill="#a8d5ff" stroke="#666" />
+                <text x="130" y="67" text-anchor="middle">页0 (101H)</text>
+                <rect x="210" y="50" width="120" height="25" fill="#a8d5ff" stroke="#666" />
+                <text x="270" y="67" text-anchor="middle">页2 (254H)</text>
+                <text x="200" y="100" text-anchor="middle" font-style="italic">LRU队列：[页0, 页2]</text>
+                <text x="200" y="120" text-anchor="middle" font-size="12">TLB为空</text>
+            </svg>
+        </div>
+
+        <!-- 访问2362H -->
+        <div class="step">
+            <h4>访问2362H (页2)</h4>
+            <svg width="400" height="180" viewBox="0 0 400 180">
+                <rect x="50" y="20" width="300" height="60" fill="#f0f0f0" stroke="#666" />
+                <text x="200" y="45" text-anchor="middle" font-weight="bold">驻留集</text>
+                <rect x="70" y="50" width="120" height="25" fill="#d3d3d3" stroke="#666" />
+                <text x="130" y="67" text-anchor="middle">页0 (101H)</text>
+                <rect x="210" y="50" width="120" height="25" fill="#90ee90" stroke="#666" />
+                <text x="270" y="67" text-anchor="middle">页2 (254H)</text>
+                
+                <!-- 箭头和状态变化 -->
+                <path d="M200,90 L200,110" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)" />
+                <text x="200" y="130" text-anchor="middle" font-style="italic">LRU队列：[页2, 页0]</text>
+                <text x="200" y="150" text-anchor="middle" font-size="12">TLB更新：添加页2映射</text>
+                
+                <!-- 箭头标记定义 -->
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+                    </marker>
+                </defs>
+            </svg>
+        </div>
+
+        <!-- 访问1565H -->
+        <div class="step">
+            <h4>访问1565H (页1) - 缺页中断</h4>
+            <svg width="400" height="220" viewBox="0 0 400 220">
+                <rect x="50" y="20" width="300" height="60" fill="#f0f0f0" stroke="#666" />
+                <text x="200" y="45" text-anchor="middle" font-weight="bold">驻留集</text>
+                
+                <!-- 替换过程动画 -->
+                <rect x="70" y="50" width="120" height="25" fill="#ffcccb" stroke="#666" />
+                <text x="130" y="67" text-anchor="middle"><tspan style="text-decoration: line-through;">页0 (101H)</tspan></text>
+                <rect x="70" y="90" width="120" height="25" fill="#90ee90" stroke="#666" />
+                <text x="130" y="107" text-anchor="middle">页1 (101H)</text>
+                
+                <rect x="210" y="50" width="120" height="25" fill="#a8d5ff" stroke="#666" />
+                <text x="270" y="67" text-anchor="middle">页2 (254H)</text>
+                
+                <!-- 说明文字 -->
+                <text x="200" y="140" text-anchor="middle" font-style="italic">LRU替换：页0被页1替换</text>
+                <text x="200" y="160" text-anchor="middle" font-style="italic">新LRU队列：[页2, 页1]</text>
+                <text x="200" y="180" text-anchor="middle" font-size="12">TLB更新：添加页1映射</text>
+                <text x="200" y="200" text-anchor="middle" font-size="12" fill="#ff4444">缺页处理耗时：10^8 ns</text>
+            </svg>
+        </div>
+
+        <!-- 访问25A5H -->
+        <div class="step">
+            <h4>访问25A5H (页2)</h4>
+            <svg width="400" height="180" viewBox="0 0 400 180">
+                <rect x="50" y="20" width="300" height="60" fill="#f0f0f0" stroke="#666" />
+                <text x="200" y="45" text-anchor="middle" font-weight="bold">驻留集</text>
+                <rect x="70" y="50" width="120" height="25" fill="#d3d3d3" stroke="#666" />
+                <text x="130" y="67" text-anchor="middle">页1 (101H)</text>
+                <rect x="210" y="50" width="120" height="25" fill="#90ee90" stroke="#666" />
+                <text x="270" y="67" text-anchor="middle">页2 (254H)</text>
+                
+                <!-- 箭头和状态变化 -->
+                <path d="M200,90 L200,110" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)" />
+                <text x="200" y="130" text-anchor="middle" font-style="italic">LRU队列：[页2, 页1]</text>
+                <text x="200" y="150" text-anchor="middle" font-size="12">TLB命中：直接访问页2</text>
+            </svg>
+        </div>
+    </div>
+
     <h3>答案总结</h3>
     <table>
         <tr>
@@ -133,5 +218,67 @@
     .solution sup {
         font-size: 0.8em;
         vertical-align: super;
+    }
+
+    .lru-visualization {
+        margin: 20px 0;
+        padding: 15px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .step {
+        margin-bottom: 30px;
+        padding: 15px;
+        border: 1px solid #e0e0e0;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+    }
+
+    .step:hover {
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .step h4 {
+        color: #2c3e50;
+        margin-top: 0;
+        margin-bottom: 15px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid #eee;
+    }
+
+    svg {
+        max-width: 100%;
+        height: auto;
+        margin: 10px 0;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    svg text {
+        font-family: "Segoe UI", Arial, sans-serif;
+        dominant-baseline: middle;
+    }
+
+    svg rect {
+        transition: all 0.3s ease;
+    }
+
+    svg rect:hover {
+        filter: brightness(0.95);
+        cursor: pointer;
+    }
+
+    @media (max-width: 600px) {
+        svg {
+            width: 100%;
+            height: auto;
+        }
+        .step {
+            padding: 10px;
+        }
     }
 </style>
